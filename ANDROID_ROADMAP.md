@@ -17,8 +17,8 @@ The developer is experienced in software development, is learning C, and is new 
 ## Agreed initial target
 
 - Phone: Pixel 9 Pro XL, Android 17.
-- Controller: GameSir Cyclone 2; USB-C is the preferred connection.
-- Controller-required gameplay is acceptable initially, subject to proving wired operation on the phone.
+- Input: touchscreen is the primary target and the intended way to play on the phone.
+- Optional controller experiment: check whether Android and SDL detect the GameSir Cyclone 2 over USB-C. Controller gameplay is not an MVP prerequisite.
 - Importer: support one known-good Wolfenstein RPG IPA layout first.
 - Use an Android emulator for routine development, with physical-phone checks at specific milestones.
 - Keep game logic unchanged where possible, reuse SDL2, and avoid a speculative renderer rewrite.
@@ -87,8 +87,8 @@ Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22
 
 - Whether alpha testing/blending, fog and texture-combiner behavior match expectations on the emulator, and whether all isolated rendering operations behave correctly on the Pixel.
 - All Android Clang compilation errors and optimized ARM runtime issues.
-- Cyclone 2 wired detection and complete button/axis mapping on the Pixel.
-- Complete controller-only and touch-only coverage of gameplay and minigames.
+- Cyclone 2 wired detection and basic button/axis reporting on the Pixel.
+- Complete touch coverage of gameplay and minigames; optional controller mappings can be evaluated afterward where they are useful.
 - Audio interruptions, output changes, background/resume and graphics-resource recovery.
 
 ## Proposed architecture
@@ -147,9 +147,9 @@ If real tests demonstrate fundamental GLES1 problems, implement a bounded GLES2 
 
 ### Input and audio
 
-First wire finger events into the existing touch interface. Preserve starting/current pointer coordinates because `Canvas` and `MenuSystem` currently consult mouse globals. Use actual release coordinates, handle cancelled gestures, and prevent duplicate synthetic mouse/finger actions.
+Touch is the primary input method. First wire SDL finger events into the existing touch interface. Preserve starting/current pointer coordinates because `Canvas` and `MenuSystem` currently consult mouse globals. Use actual release coordinates, handle cancelled gestures, and prevent duplicate synthetic mouse/finger actions.
 
-Add controller defaults for all required actions and test every interactive game state. Controller detection alone does not establish playability. GameSir documents Android support and wired connectivity, but wired operation on this specific Pixel remains untested.
+Test whether Android and SDL detect the GameSir over USB-C and record its buttons and axes. Treat controller mappings as an optional enhancement after the touch path works, unless touch integration proves substantially harder than the source suggests. Controller detection alone does not establish controller playability.
 
 Use upstream OpenAL Soft, initially evaluating its OpenSL ES backend; Oboe is an alternative if needed. Add a deliberate silent mode, safe initialization failure, and background/audio-focus handling. Audio focus means responding when Android gives another application priority to play sound.
 
@@ -238,15 +238,15 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 - **Architecture consequence of failure:** Main renderer decision gate; change the rendering backend only where evidence requires it.
 - **Learning focus:** Following one frame through the existing rendering code.
 
-### 6. Establish a complete controller play path
+### 6. Establish complete touch input
 
-- **Objective:** Play using the Cyclone 2 over USB-C.
-- **Files/subsystems:** `Input`, `Canvas`, `MenuSystem`, configuration and minigames.
-- **Expected changes:** Usable default bindings, Android Back handling, reconnect behavior and held-input reset.
-- **Unknowns/risks:** Wired compatibility, mappings, dead zones, repeat behavior and pointer-oriented screens.
-- **Success:** From fresh settings, navigate menus, move/turn/strafe, fight, use inventory, change weapons, save/load and complete representative minigames. Disconnect/reconnect without stuck input.
-- **Architecture consequence of failure:** Usually input/UI fixes. Move basic touch earlier if that is cheaper than making every screen controller-only. Do not assume Bluetooth meets the user's wired preference without discussion.
-- **Learning focus:** Translating physical input into existing game actions.
+- **Objective:** Make the game playable using the phone's touchscreen.
+- **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames` and other touch-oriented minigames.
+- **Expected changes:** Connect SDL finger events to the existing touch handlers; preserve the 480 by 320 logical coordinate system; correct scaling, gestures, hit detection and Android system-edge behavior where testing exposes problems.
+- **Unknowns/risks:** Single-pointer assumptions, small targets, drag thresholds, coordinate conversion, duplicate synthetic events and system edge gestures.
+- **Success:** The title screen, menus, movement, combat, dialogs, inventory, mixing, cards, driving, save/load and other required interactions can be completed on the Pixel using touch. No duplicate actions or stuck highlights occur.
+- **Architecture consequence of failure:** Add targeted virtual controls or multi-pointer state rather than rewrite gameplay input.
+- **Learning focus:** Mapping physical screen coordinates into the game's logical display and existing touch model.
 
 ### 7. Enable audio
 
@@ -258,15 +258,15 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 - **Architecture consequence of failure:** Try the alternative OpenAL Soft Android backend before replacing the audio layer.
 - **Learning focus:** Samples, buffers and playback sources.
 
-### 8. Connect and validate existing touch controls
+### 8. Evaluate optional controller support
 
-- **Objective:** Play without a controller.
-- **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames`.
-- **Expected changes:** Finger-event adapter, pointer state, coordinate conversion, cancellation and duplicate-event suppression.
-- **Unknowns/risks:** Single-pointer assumptions, small targets, drag thresholds and system edge gestures.
-- **Success:** Touch-only menus, movement/combat, dialogs, inventory, mixing, cards, driving and save/load. No duplicate actions or stuck highlights.
-- **Architecture consequence of failure:** Add targeted virtual controls or multi-pointer state rather than rewrite gameplay input.
-- **Learning focus:** Mapping physical screen coordinates into the game's logical display.
+- **Objective:** Determine whether the Cyclone 2 is a useful optional input method, without blocking touch-first play.
+- **Files/subsystems:** SDL controller events, `Input` and a small diagnostic or input log.
+- **Expected changes:** Detect the wired controller and record its reported buttons, axes, connection and reconnection behavior. Add gameplay mappings later only where they provide a clear benefit.
+- **Unknowns/risks:** Wired compatibility, device mappings, dead zones and Android USB behavior.
+- **Success:** Establish whether Android and SDL recognize the controller over USB-C and document its input report. Full controller-only campaign completion is not required.
+- **Architecture consequence of failure:** None for the MVP; continue with touch as the supported input path.
+- **Learning focus:** How Android and SDL represent an external game controller.
 
 ### 9. Harden lifecycle and persistence
 
@@ -317,8 +317,8 @@ The exact Android compiler diagnostic list is still unknown. These findings do n
 | High | Lifecycle and ownership | Missing integration and explicit destruction patterns threaten resume/restart |
 | High | Archive robustness | Reader trusts sizes/offsets and uses fatal errors |
 | Medium | Clang/ARM portability | Concrete defects exist; optimized behavior needs testing |
-| Medium | Complete wired-controller play | Connection and coverage remain unproven |
-| Medium | Touch integration | Existing UI is substantial, but pointer/coordinate assumptions remain |
+| Medium | Touch integration | Existing touch-oriented UI is substantial, but the SDL adapter and pointer/coordinate assumptions remain unproven |
+| Low | Optional wired-controller support | Detection is unproven, but it does not block the touch-first MVP |
 | Medium | Audio interruptions and routing | Core API is portable; mobile behavior needs validation |
 | Medium | Data-free packaging | Local files and bundled images require an explicit audit |
 | Low | Basic SDL Android structure | Established workflow fits the application |
@@ -326,13 +326,13 @@ The exact Android compiler diagnostic list is still unknown. These findings do n
 
 ## MVP and later polish
 
-The smallest engineering proof is an ARM64 landscape build that imports the IPA and runs silent gameplay with a supported controller.
+The smallest engineering proof is an ARM64 landscape build that imports the IPA and runs silent gameplay with working touchscreen input.
 
-A usable MVP should include normal installation on the Pixel, one supported IPA layout, aspect-correct display, complete controller bindings, save/load, basic background/resume, audio with safe failure handling, and no packaged proprietary resources. GLES1 is conditional on experiments. Basic touch may be included early if it is easier than closing controller-only UI gaps.
+A usable MVP should include normal installation on the Pixel, one supported IPA layout, aspect-correct display, complete touchscreen play, save/load, basic background/resume, audio with safe failure handling, and no packaged proprietary resources. GLES1 is conditional on experiments. Controller support is optional for the MVP and can be added where it provides a clear benefit.
 
-Do not call the game fully playable based on reaching the first level. A complete campaign validation is needed for that claim.
+Do not call the game fully playable based on reaching the first level. A complete campaign validation using the touchscreen is needed for that claim.
 
-Phone-native polish adds validated touch-only play, comfortable hit targets, screen-cutout/gesture-area handling, import progress and recovery, save export/import, robust audio routing, context-loss recovery and broader device testing.
+Phone-native polish adds more comfortable hit targets, screen-cutout and gesture-area refinements, optional controller mappings, import progress and recovery, save export/import, robust audio routing, context-loss recovery and broader device testing.
 
 ## Immediate next chunk
 
