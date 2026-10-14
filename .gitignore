@@ -1,3 +1,15 @@
 /build/
 Wolfenstein RPG.ipa
 WolfensteinRPG.app/
+
+/.vs/
+/out/
+
+/android/.gradle/
+/android/.idea/
+/android/build/
+/android/local.properties
+/android/app/.cxx/
+/android/app/build/
+
+*~
