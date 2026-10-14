@@ -55,12 +55,12 @@ An IPA is an iPhone/iPad application archive, roughly equivalent to an Android A
 
 ## Evidence and confidence
 
-Source review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). The review did not compile for Android or test an Android device. Recheck the baseline if the repository changes.
+Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android harness work recorded above supersedes that limitation for the isolated GLES tests; the full game still has not been compiled for Android.
 
 ### Confirmed from source
 
 - CMake currently builds a desktop executable using SDL2, desktop OpenGL, OpenAL, zlib and the bundled hash library.
-- The local Windows SDL headers at review time identify version 2.32.10. The repository does not vendor SDL or impose a minimum version in `find_package`.
+- The local Windows SDL headers at review time identify version 2.32.10. The desktop build does not impose a minimum SDL version in `find_package`; the Android harness now pins SDL 2.32.10 as a submodule.
 - `Main.cpp` opens `Wolfenstein RPG.ipa` by relative filename before initializing SDL.
 - `ZipFile` uses seekable `FILE*` access through `fopen`, `fseek` and `ftell`.
 - `JavaStream.cpp` already reads individual resources from the archive into memory. It assumes `Payload/Wolf...RPG.app/Packages/` and a `sounds/` subdirectory.
@@ -85,7 +85,7 @@ Source review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (A
 
 ### Requires experiments
 
-- Whether the exact rendering operations behave correctly on the emulator and Pixel.
+- Whether alpha testing/blending, fog and texture-combiner behavior match expectations on the emulator, and whether all isolated rendering operations behave correctly on the Pixel.
 - All Android Clang compilation errors and optimized ARM runtime issues.
 - Cyclone 2 wired detection and complete button/axis mapping on the Pixel.
 - Complete controller-only and touch-only coverage of gameplay and minigames.
@@ -188,6 +188,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 1. Launch a minimal Android app
 
+- **Status:** Emulator portion complete through textured rendering. Pixel validation remains pending.
 - **Objective:** Run native code and display a solid color.
 - **Files/subsystems:** New minimal Android wrapper, SDL Android template and isolated graphics harness.
 - **Expected changes:** Pin build tools/SDL, add emulator and phone build targets, request a GLES1 drawing context, create a landscape surface.
@@ -198,6 +199,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 2. Test the game's graphics features in isolation
 
+- **Status:** In progress. Basic matrices, client arrays, texture upload/filtering and textured drawing work on the emulator; alpha testing/blending, fog, texture combiners and Pixel behavior remain to be tested.
 - **Objective:** Test GLES1 viability before substantial port work.
 - **Files/subsystems:** Small graphics harness informed by `GLES`, `Image` and `Graphics`.
 - **Expected changes:** Draw synthetic textured shapes using the game's texture formats, alpha testing, fog and corrected tint combiner.
@@ -334,11 +336,11 @@ Phone-native polish adds validated touch-only play, comfortable hit targets, scr
 
 ## Immediate next chunk
 
-**Launch a virtual Android device and display one solid color from a tiny native SDL app.**
+**Validate the current textured GLES 1.1 harness on the Pixel 9 Pro XL.**
 
-First inspect installed Android tools and the development machine architecture. Explain the required setup before making environment changes. Keep game loading, audio, controllers and shader work out of this chunk. Demonstrate the result and review the few important lines before proceeding.
+Install the existing ARM64 debug build on the phone, launch it, and confirm that the generated blue-and-white checkerboard renders correctly in landscape. Record the reported GLES vendor, renderer, version and drawable size. Then send the app to the background and resume it, and exercise an orientation change, to expose basic Android lifecycle or surface-recreation problems. This is a validation chunk; it should not add game loading, audio, controls or new rendering features.
 
-After that: test a textured shape and the required graphics effects; then perform the NDK compile/link audit; then test the document-picker-to-resource path. Validate the graphics experiment on the Pixel early.
+After that: add isolated tests for alpha testing/blending, fog and the texture-combiner behavior used by the existing renderer. Validate each effect on the emulator and Pixel before performing the full-game NDK compile/link audit. The document-picker-to-resource path follows that audit.
 
 ## Source files informing the plan
 
