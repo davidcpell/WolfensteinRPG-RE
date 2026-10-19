@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <algorithm>
 #include <cstring>
 
 #include "CAppContainer.h"
@@ -3897,7 +3898,9 @@ static void DrawBitmap(short* buffer, int buffW, int buffH, int x, int y, int w,
 	float vp[12]; // [sp+18h] [bp-68h] BYREF
 	float st[8]; // [sp+48h] [bp-38h] BYREF
 
+#ifndef __ANDROID__
 	PFNGLACTIVETEXTUREPROC glActiveTexture = (PFNGLACTIVETEXTUREPROC)SDL_GL_GetProcAddress("glActiveTexture");
+#endif
 
 	vp[2] = 0.0;
 	vp[5] = 0.0;
@@ -3952,7 +3955,11 @@ void Render::Render3dScene(void) {
 	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+#ifdef __ANDROID__
+	glOrthof(0.0f, Applet::IOS_WIDTH, Applet::IOS_HEIGHT, 0.0f, -1.0f, 1.0f);
+#else
 	glOrtho(0.0, Applet::IOS_WIDTH, Applet::IOS_HEIGHT, 0.0, -1.0, 1.0);
+#endif
 	//glRotatef(90.0, 0.0, 0.0, 1.0);
 	//glTranslatef(0.0, -320.0, 0.0);
 	glMatrixMode(GL_MODELVIEW);

@@ -46,24 +46,28 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified the existing renderer's normal alpha-blending factors on the Pixel: `GL_SRC_ALPHA` and `GL_ONE_MINUS_SRC_ALPHA` mixed half-alpha white texels with the dark background while fully opaque blue texels remained unchanged. Blend setup and drawing produced no GL errors.
 - Verified the renderer's linear fixed-function fog calls on the Pixel. A textured quad spanning the configured eye-space depth range retained its original checker colors at the near edge and converged smoothly to the fog color at the far edge, with no GL errors.
 - Verified the `TexCombineShift` operation on the Pixel. The GLES headers require `GL_SRC0_*`/`GL_SRC1_*` parameter names instead of the desktop `GL_SOURCE0_*`/`GL_SOURCE1_*` names. Both `GL_TEXTURE0` and the portable GLES 1.1 `GL_TEXTURE` source worked on the Mali driver; the harness retains `GL_TEXTURE`. Adding a constant red tint produced the expected clamped RGB values while preserving alpha, with no GL errors.
+- Compiled every engine source file and the bundled hash library for Android ARM64 with Android Clang. The audit identified and corrected Android GLES header selection, direct GLES function declarations, `glOrtho` calls, texture-combiner names, missing standard `<algorithm>` includes and signed color-case constants.
+- Linked the compiled engine into a separate `libwolfenstein_engine_audit.so` alongside the unchanged graphics harness. The audit library uses an explicitly named no-op OpenAL shim until the real Android audio dependency is integrated.
+- Installed the linked APK on the Pixel and verified that Android loaded the engine-library dependency while the known-good texture-combiner harness continued to render with no GL or Java runtime errors.
+- Rebuilt the normal Visual Studio Debug target successfully after the shared-source portability changes. Its existing warnings remain, with no build errors.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- The existing game engine has not been compiled or linked into the Android APK.
+- The engine has not yet replaced the synthetic harness as the Android entry point, and actual game startup has not been attempted.
 - IPA selection/import, game-resource loading, saves, audio, game input and touch integration have not started.
 - The current APK is an isolated graphics harness and does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Begin the full-game Android compile/link audit. Add an Android native target for the existing engine, apply only the platform and GLES naming adaptations required by compiler evidence, and retain the current harness as the known-good runtime entry point until the engine links cleanly.
+Begin the IPA import path while retaining the graphics harness as the Android entry point. Start with the Android document picker and a persistent private copy, then validate one known-good archive layout and pass its real path to native code. This supplies the resource prerequisite needed before attempting game startup.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
 ## Evidence and confidence
 
-Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android harness work recorded above supersedes that limitation for the isolated GLES tests; the full game still has not been compiled for Android.
+Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android work recorded above supersedes that limitation for isolated GLES tests and for compiling, linking and loading the engine audit library. Actual game startup is still untested.
 
 ### Confirmed from source
 
@@ -94,7 +98,7 @@ Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22
 ### Requires experiments
 
 - Whether alpha testing/blending, fog and texture-combiner behavior match expectations on the emulator, and whether all isolated rendering operations behave correctly on the Pixel.
-- All Android Clang compilation errors and optimized ARM runtime issues.
+- Optimized ARM runtime issues after actual game startup.
 - Cyclone 2 wired detection and basic button/axis reporting on the Pixel.
 - Complete touch coverage of gameplay and minigames; optional controller mappings can be evaluated afterward where they are useful.
 - Audio interruptions, output changes, background/resume and graphics-resource recovery.
@@ -218,6 +222,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 3. Compile and link the existing game for Android
 
+- **Status:** Complete for the compile/link/load audit. Every engine and hash-library translation unit compiles for Android ARM64; the resulting audit library links and loads on the Pixel while the graphics harness remains the entry point. OpenAL is represented only by a clearly scoped no-op audit shim.
 - **Objective:** Produce a loadable native game library before full game startup.
 - **Files/subsystems:** Root/src CMake files, SDL finder, hash-library target, platform headers and affected translation units.
 - **Expected changes:** Add an Android shared target while retaining desktop builds; use Android-built dependencies; exclude Windows resources; fix demonstrated portability defects.
@@ -344,11 +349,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Begin the full-game Android compile/link audit without replacing the working graphics harness.**
+**Create the first IPA-selection and private-copy path without starting the game.**
 
-Add a separate Android CMake target that compiles the existing engine sources without making it the APK's entry point yet. Resolve errors in small categories: platform headers and APIs, target shape, SDL/GLES includes, bundled-library portability and unavailable desktop dependencies. Apply the demonstrated GLES substitutions, including `glOrtho` to `glOrthof` and the texture-combiner names, only in the Android path. The first success gate is compiling every game source to object files; linking and loading the engine library follows after that evidence is clean.
+Add a small Android launch flow that uses the system document picker to select an IPA, copies it into persistent app-private storage and reports success or a recoverable error. Keep the native graphics harness available so this storage work is isolated from engine startup. Do not extract the archive or add support for multiple layouts yet.
 
-After that: link and load the engine library while retaining the synthetic harness startup, then begin the document-picker-to-resource path.
+The first success gate is selecting the known-good IPA on the Pixel, completing the private copy, restarting the app and confirming that the copied file is still present and readable. After that, validate the expected archive paths and pass the private pathname into native startup.
 
 ## Source files informing the plan
 

@@ -1,7 +1,9 @@
 #include <stdexcept>
 #include <cstring>
 
-#ifdef _WIN32
+#ifdef WOLFENSTEIN_ANDROID_COMPILE_AUDIT
+#include "OpenALCompileAudit.h"
+#elif defined(_WIN32)
 #include <al.h>
 #include <alc.h>
 #else

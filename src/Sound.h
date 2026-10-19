@@ -1,6 +1,8 @@
 #ifndef __SOUND_H__
 #define __SOUND_H__
-#ifdef _WIN32
+#ifdef WOLFENSTEIN_ANDROID_COMPILE_AUDIT
+#include "OpenALCompileAudit.h"
+#elif defined(_WIN32)
 #include <al.h>
 #include <alc.h>
 #else

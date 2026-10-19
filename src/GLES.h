@@ -3,8 +3,10 @@
 
 #include "SDLGL.h"
 
+#ifndef __ANDROID__
 typedef void (APIENTRYP PFNGLACTIVETEXTUREPROC) (GLenum texture);
 typedef void (APIENTRYP PFNGLCLIENTACTIVETEXTUREPROC) (GLenum texture);
+#endif
 
 class Render;
 class TinyGL;

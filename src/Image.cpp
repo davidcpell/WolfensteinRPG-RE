@@ -60,7 +60,9 @@ void Image::DrawTexture(int texX, int texY, int texW, int texH, int posX, int po
     float vp[12];
     float st[8];
 
+#ifndef __ANDROID__
     PFNGLACTIVETEXTUREPROC glActiveTexture = (PFNGLACTIVETEXTUREPROC)SDL_GL_GetProcAddress("glActiveTexture");
+#endif
 
     this->setRenderMode(renderMode);
     scaleW = (float)texW * 0.5f;

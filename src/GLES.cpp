@@ -79,8 +79,10 @@ bool gles::ClearBuffer(int color) {
 
 void gles::SetGLState() {
 
+#ifndef __ANDROID__
 	PFNGLACTIVETEXTUREPROC glActiveTexture = (PFNGLACTIVETEXTUREPROC)SDL_GL_GetProcAddress("glActiveTexture");
 	PFNGLCLIENTACTIVETEXTUREPROC glClientActiveTexture = (PFNGLCLIENTACTIVETEXTUREPROC)SDL_GL_GetProcAddress("glClientActiveTexture");
+#endif
 
 	glViewport(this->vPortRect[0], this->vPortRect[1], this->vPortRect[2], this->vPortRect[3]);
 	glScissor(this->vPortRect[0], this->vPortRect[1], this->vPortRect[2], this->vPortRect[3]);
@@ -230,7 +232,11 @@ void gles::ResetGLState() {
 	//glScissor(0, 0, 320, 480);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+#ifdef __ANDROID__
+	glOrthof(0.0f, (GLfloat)Applet::IOS_WIDTH, (GLfloat)Applet::IOS_HEIGHT, 0.0f, -1.0f, 1.0f);
+#else
 	glOrtho(0.0, (GLfloat)Applet::IOS_WIDTH, (GLfloat)Applet::IOS_HEIGHT, 0.0, -1.0, 1.0);
+#endif
 	//glOrthof(0.0, 320.0, 480.0, 0.0, -1.0, 1.0);
 	//glRotatef(90.0, 0.0, 0.0, 1.0);
 	//glTranslatef(0.0, -320.0, 0.0);
@@ -1174,7 +1180,9 @@ void gles::DrawPortalTexture(Image* img, int x, int y, int w, int h, float tx, f
 	float st[8];
 	int texWidth, texHeight;
 
+#ifndef __ANDROID__
 	PFNGLACTIVETEXTUREPROC glActiveTexture = (PFNGLACTIVETEXTUREPROC)SDL_GL_GetProcAddress("glActiveTexture");
+#endif
 
 	if (!img->piDIB)
 		return;
@@ -1277,15 +1285,31 @@ void gles::TexCombineShift(int r, int g, int b) { // [GEC]
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, color);
 	glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_ADD);
+#ifdef __ANDROID__
+	glTexEnvi(GL_TEXTURE_ENV, GL_SRC0_RGB, GL_TEXTURE);
+#else
 	glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
+#endif
 	glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+#ifdef __ANDROID__
+	glTexEnvi(GL_TEXTURE_ENV, GL_SRC1_RGB, GL_CONSTANT);
+#else
 	glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_CONSTANT);
+#endif
 	glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 	// glTexCombReplaceAlpha
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
+#ifdef __ANDROID__
+	glTexEnvi(GL_TEXTURE_ENV, GL_SRC0_ALPHA, GL_TEXTURE);
+#else
 	glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_TEXTURE0);
+#endif
 	glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
+#ifdef __ANDROID__
+	glTexEnvi(GL_TEXTURE_ENV, GL_SRC1_ALPHA, GL_PRIMARY_COLOR);
+#else
 	glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA, GL_PRIMARY_COLOR);
+#endif
 	glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA);
 }

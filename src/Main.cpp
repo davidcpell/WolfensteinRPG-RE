@@ -84,7 +84,11 @@ void drawView(SDLGL *sdlGL) {
     glDisable(GL_ALPHA_TEST);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+#ifdef __ANDROID__
+    glOrthof(0.0f, Applet::IOS_WIDTH, Applet::IOS_HEIGHT, 0.0f, -1.0f, 1.0f);
+#else
     glOrtho(0.0, Applet::IOS_WIDTH, Applet::IOS_HEIGHT, 0.0, -1.0, 1.0);
+#endif
     //glRotatef(90.0, 0.0, 0.0, 1.0);
     //glTranslatef(0.0, -320.0, 0.0);
     glMatrixMode(GL_MODELVIEW);
