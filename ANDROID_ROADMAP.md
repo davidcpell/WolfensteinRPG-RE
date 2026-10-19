@@ -60,6 +60,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Added Android 17 immersive-mode handling to the game activity. The Pixel now hides the status and navigation bars when the game gains focus, and the briefing's top `Skip` and bottom `More` controls are fully visible.
 - Entered the first level on the Pixel and verified textured 3D world geometry, sprites, the weapon view, HUD, transparency and the previously tested fixed-function effects in the combined game renderer.
 - Verified the latent touchscreen path in the real game. Touch advanced the intro, menus, dialogue and multi-page help; an upward swipe moved the player forward one grid square using the existing gameplay controls.
+- Verified the first touchscreen combat encounter on the Pixel: the player fought and killed the first enemy successfully.
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
 - Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
@@ -68,7 +69,7 @@ The developer is experienced in software development, is learning C, and is new 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- Combat, inventory and complicated minigame touch interactions have not yet been verified on Android.
+- Inventory and complicated minigame touch interactions have not yet been verified on Android; broader combat coverage remains for later playtesting.
 - A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
 - Audio still uses the temporary silent OpenAL shim. Repeated lifecycle stress, graphics-context loss and interruption during an active save have not yet been tested.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
@@ -269,7 +270,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 6. Establish complete touch input
 
-- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help and basic forward movement on the Pixel. Combat, inventory, minigames and complete-campaign coverage remain.
+- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, basic forward movement and the first successful combat encounter on the Pixel. Inventory, minigames, broader combat and complete-campaign coverage remain.
 - **Objective:** Make the game playable using the phone's touchscreen.
 - **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames` and other touch-oriented minigames.
 - **Expected changes:** Connect SDL finger events to the existing touch handlers; preserve the 480 by 320 logical coordinate system; correct scaling, gestures, hit detection and Android system-edge behavior where testing exposes problems.
