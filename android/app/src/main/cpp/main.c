@@ -29,16 +29,19 @@ int main(int argc, char* argv[])
 	int checked_gl_error = 0;
 	int running = 1;
 	const GLfloat quad_vertices[] = {
-		-1.2f, -0.7f,
-		 1.2f, -0.7f,
-		-1.2f,  0.7f,
-		 1.2f,  0.7f
+		-1.2f, -0.7f,  0.0f,
+		 1.2f, -0.7f, -0.8f,
+		-1.2f,  0.7f,  0.0f,
+		 1.2f,  0.7f, -0.8f
 	};
 	const GLfloat quad_texture_coordinates[] = {
 		0.0f, 0.0f,
 		1.0f, 0.0f,
 		0.0f, 1.0f,
 		1.0f, 1.0f
+	};
+	const GLfloat fog_color[] = {
+		0.75f, 0.12f, 0.08f, 1.0f
 	};
 
 	(void)argc;
@@ -108,7 +111,7 @@ int main(int argc, char* argv[])
 			checker_pixels[pixel_index + 0] = light_square ? 240 : 32;
 			checker_pixels[pixel_index + 1] = light_square ? 240 : 96;
 			checker_pixels[pixel_index + 2] = light_square ? 240 : 192;
-			checker_pixels[pixel_index + 3] = light_square ? 128 : 255;
+			checker_pixels[pixel_index + 3] = 255;
 		}
 	}
 
@@ -160,29 +163,32 @@ int main(int argc, char* argv[])
 		}
 
 		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_BLEND);
+		glEnable(GL_FOG);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL blend enable");
+			log_gl_error("OpenGL fog enable");
 		}
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glFogf(GL_FOG_MODE, GL_LINEAR);
+		glFogfv(GL_FOG_COLOR, fog_color);
+		glFogf(GL_FOG_START, 0.0f);
+		glFogf(GL_FOG_END, 0.8f);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL blend function");
+			log_gl_error("OpenGL fog parameters");
 		}
 		glBindTexture(GL_TEXTURE_2D, checker_texture);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-		glVertexPointer(2, GL_FLOAT, 0, quad_vertices);
+		glVertexPointer(3, GL_FLOAT, 0, quad_vertices);
 		glTexCoordPointer(2, GL_FLOAT, 0, quad_texture_coordinates);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL blended draw");
+			log_gl_error("OpenGL fogged draw");
 		}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisable(GL_BLEND);
+		glDisable(GL_FOG);
 		glDisable(GL_TEXTURE_2D);
 
 		checked_gl_error = 1;
