@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 			checker_pixels[pixel_index + 0] = light_square ? 240 : 32;
 			checker_pixels[pixel_index + 1] = light_square ? 240 : 96;
 			checker_pixels[pixel_index + 2] = light_square ? 240 : 192;
-			checker_pixels[pixel_index + 3] = light_square ? 0 : 255;
+			checker_pixels[pixel_index + 3] = light_square ? 128 : 255;
 		}
 	}
 
@@ -160,13 +160,13 @@ int main(int argc, char* argv[])
 		}
 
 		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_ALPHA_TEST);
+		glEnable(GL_BLEND);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL alpha-test enable");
+			log_gl_error("OpenGL blend enable");
 		}
-		glAlphaFunc(GL_GREATER, 0.0f);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL alpha function");
+			log_gl_error("OpenGL blend function");
 		}
 		glBindTexture(GL_TEXTURE_2D, checker_texture);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -177,12 +177,12 @@ int main(int argc, char* argv[])
 		glTexCoordPointer(2, GL_FLOAT, 0, quad_texture_coordinates);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL alpha-tested draw");
+			log_gl_error("OpenGL blended draw");
 		}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_BLEND);
 		glDisable(GL_TEXTURE_2D);
 
 		checked_gl_error = 1;

@@ -43,6 +43,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified a Home/resume cycle: Android destroyed and recreated the SDL surface, the same process survived, and rendering recovered without a crash or ANR.
 - Rotated between both landscape orientations. SDL received the surface changes and the checkerboard remained correct.
 - Verified the existing renderer's alpha-test pattern on the Pixel: `glEnable(GL_ALPHA_TEST)` with `glAlphaFunc(GL_GREATER, 0.0f)` discarded zero-alpha texels, retained opaque texels and produced no GL errors.
+- Verified the existing renderer's normal alpha-blending factors on the Pixel: `GL_SRC_ALPHA` and `GL_ONE_MINUS_SRC_ALPHA` mixed half-alpha white texels with the dark background while fully opaque blue texels remained unchanged. Blend setup and drawing produced no GL errors.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
 ### Deferred or not started
@@ -54,7 +55,7 @@ The developer is experienced in software development, is learning C, and is new 
 
 ### Next recommended checkpoint
 
-Continue the isolated GLES tests with blending, fog and the texture-combiner behavior used by the existing renderer. Use the Pixel as the authoritative graphics test and use the emulator where its GLES1 translation supports the operation before attempting to link the full game.
+Continue the isolated GLES tests with linear fog and the texture-combiner behavior used by the existing renderer. Use the Pixel as the authoritative graphics test and use the emulator where its GLES1 translation supports the operation before attempting to link the full game.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -204,7 +205,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 2. Test the game's graphics features in isolation
 
-- **Status:** In progress. Basic matrices, client arrays, texture upload/filtering and textured drawing work on both the emulator and Pixel. Alpha testing works on the Pixel with the same floating-point call used by the existing renderer; the emulator has a documented GLES1 encoder limitation. Blending, fog and texture combiners remain to be tested.
+- **Status:** In progress. Basic matrices, client arrays, texture upload/filtering and textured drawing work on both the emulator and Pixel. Alpha testing and normal source-alpha blending work on the Pixel with the same calls used by the existing renderer; the emulator has a documented GLES1 encoder limitation. Fog and texture combiners remain to be tested.
 - **Objective:** Test GLES1 viability before substantial port work.
 - **Files/subsystems:** Small graphics harness informed by `GLES`, `Image` and `Graphics`.
 - **Expected changes:** Draw synthetic textured shapes using the game's texture formats, alpha testing, fog and corrected tint combiner.
@@ -341,11 +342,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Add an isolated alpha-blending experiment to the GLES 1.1 harness and test it on the Pixel.**
+**Add an isolated linear-fog experiment to the GLES 1.1 harness and test it on the Pixel.**
 
-Give selected texture pixels a middle alpha value, disable alpha testing, enable blending, and use the existing renderer's normal blend factors: `GL_SRC_ALPHA` and `GL_ONE_MINUS_SRC_ALPHA`. Draw over a contrasting background and verify on the Pixel that the resulting color is the expected mix of foreground and background, with no GL errors. Explain how blending reads the destination color and why it produces soft transparency instead of alpha testing's binary keep-or-discard result. Keep fog, texture combiners and game code out of this chunk.
+Use the renderer's existing `GL_LINEAR` fog mode, fog-color call and start/end distances. Draw simple geometry whose eye-space depth spans the fog range so the near portion retains its original color while the far portion approaches the fog color. Verify the gradient and GL status on the Pixel. Explain that fixed-function fog computes a blend factor from depth; it changes a fragment's color without making that fragment transparent. Keep texture combiners and game code out of this chunk.
 
-After that: test fog and the texture-combiner behavior one at a time on the Pixel. Then perform the full-game NDK compile/link audit. The document-picker-to-resource path follows that audit.
+After that: test the texture-combiner behavior on the Pixel. Then perform the full-game NDK compile/link audit. The document-picker-to-resource path follows that audit.
 
 ## Source files informing the plan
 
