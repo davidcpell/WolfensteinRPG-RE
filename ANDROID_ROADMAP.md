@@ -57,25 +57,30 @@ The developer is experienced in software development, is learning C, and is new 
 - Added a separate silent game activity while retaining the graphics harness as a diagnostic fallback. The engine now receives the app-private IPA and save-directory paths explicitly, and the temporary no-op OpenAL layer keeps this checkpoint silent.
 - Started the real engine on the Pixel from the imported IPA. It rendered the intro, advanced to the title/main menu through touch, and opened the Options and New Game difficulty menus without a native crash or missing-resource failure.
 - Corrected Android window setup to retain the full 2244 by 1008 drawable and render the original 480 by 320 view in a centered 1512 by 1008 viewport. Input coordinates now invert that letterbox transform before reaching the existing game touch handlers.
+- Added Android 17 immersive-mode handling to the game activity. The Pixel now hides the status and navigation bars when the game gains focus, and the briefing's top `Skip` and bottom `More` controls are fully visible.
+- Entered the first level on the Pixel and verified textured 3D world geometry, sprites, the weapon view, HUD, transparency and the previously tested fixed-function effects in the combined game renderer.
+- Verified the latent touchscreen path in the real game. Touch advanced the intro, menus, dialogue and multi-page help; an upward swipe moved the player forward one grid square using the existing gameplay controls.
+- Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
+- Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- A rendered 3D level, gameplay controls and complicated minigame touch interactions have not yet been verified on Android.
-- The private save directory is supplied to the engine, but save/load behavior has not been tested.
+- Combat, inventory and complicated minigame touch interactions have not yet been verified on Android.
+- A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
 - Audio still uses the temporary silent OpenAL shim, and Android pause/resume has not yet been tested with the real engine.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Enter a new game on the Pixel and verify the first 3D scene, HUD and basic touch controls. Keep the silent engine activity and graphics harness separate until level rendering, touch movement and a save/load round trip are understood.
+Test the real engine's Android lifecycle and persistence on the Pixel. Exercise Home/resume, lock/unlock, forced stop/restart and `Continue`, while checking that completed configuration and save files remain readable. Keep the silent engine activity and graphics harness separate while lifecycle recovery is still being established.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
 ## Evidence and confidence
 
-Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android work recorded above supersedes that limitation through real silent engine startup and touch-driven main-menu navigation. First-level gameplay is still untested.
+Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android work recorded above supersedes that limitation through real silent first-level rendering, saved-game restoration and basic touch movement on the Pixel.
 
 ### Confirmed from source
 
@@ -100,13 +105,13 @@ Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22
 
 - Adapting the existing renderer to OpenGL ES 1.1 should be smaller than converting it to shaders.
 - Copying the IPA privately should preserve most existing resource-loading code.
-- Basic touch support may require an event adapter and fixes rather than a new virtual-control system.
+- The existing mouse-to-touch path is sufficient for basic gameplay gestures; complete interaction coverage may still expose targeted fixes.
 - OpenAL Soft integration should mostly involve dependency/build setup plus lifecycle and failure handling.
 
 ### Requires experiments
 
-- Whether alpha testing/blending, fog and texture-combiner behavior match expectations on the emulator, and whether all isolated rendering operations behave correctly on the Pixel.
-- Optimized ARM runtime issues after actual game startup.
+- Whether remaining combined rendering states match the desktop during longer levels and effects-heavy scenes.
+- Additional ARM runtime issues during longer play, combat and minigames.
 - Cyclone 2 wired detection and basic button/axis reporting on the Pixel.
 - Complete touch coverage of gameplay and minigames; optional controller mappings can be evaluated afterward where they are useful.
 - Audio interruptions, output changes, background/resume and graphics-resource recovery.
@@ -241,7 +246,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 4. Import the user's IPA and establish writable paths
 
-- **Status:** IPA selection, validation, atomic private copying, restart persistence, native path handoff and representative native resource reads are complete on the Pixel. The engine receives an app-private save path; save/load behavior still needs verification.
+- **Status:** IPA selection, validation, atomic private copying, restart persistence, native path handoff and representative native resource reads are complete on the Pixel. The engine uses its app-private save path, and a basic saved game survived an APK update and loaded through `Continue`; interrupted-write hardening remains.
 - **Objective:** Implement the real first-launch data flow.
 - **Files/subsystems:** Android picker bridge, `Main`, `ZipFile`, `JavaStream`, configuration paths.
 - **Expected changes:** Temporary private copy, validation, atomic installation, explicit resource/save paths and recoverable errors.
@@ -252,7 +257,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 5. Display actual game content, initially silent
 
-- **Status:** Partial. The Pixel reaches the intro, title/main menu, Options menu and difficulty menu from the imported IPA with the silent engine. The centered 3:2 viewport is correct; a rendered level remains to be verified.
+- **Status:** Complete for the first-level checkpoint. The Pixel reaches the intro, title/main menu, Options and difficulty menus, then renders the Tower level with geometry, sprites, text, HUD, transparency and fog. The centered 3:2 viewport remains fully visible under Android 17 immersive mode.
 - **Objective:** Show the title/menu and a rendered level.
 - **Files/subsystems:** `SDLGL`, `Main`, `GLES`, `Image`, `Graphics`, `Render`, `TinyGL`.
 - **Expected changes:** Apply proven graphics adaptations, correct viewport conversions, scale the 480x320 logical display without distortion, and allow safe silent startup.
@@ -263,6 +268,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 6. Establish complete touch input
 
+- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help and basic forward movement on the Pixel. Combat, inventory, minigames and complete-campaign coverage remain.
 - **Objective:** Make the game playable using the phone's touchscreen.
 - **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames` and other touch-oriented minigames.
 - **Expected changes:** Connect SDL finger events to the existing touch handlers; preserve the 480 by 320 logical coordinate system; correct scaling, gestures, hit detection and Android system-edge behavior where testing exposes problems.
@@ -324,13 +330,14 @@ Audit icons and the embedded image array in `App.h` too: excluding the IPA alone
 | Local SDL finder creates imported targets and searches desktop paths | Use Android source-built SDL targets without host-library discovery or target collisions |
 | Fixed-width types without direct standard includes | Make headers such as `ZipFile.h`, `JavaStream.h` and `Sound.h` self-contained |
 | ARGB constants such as `0xFFCC0000` in signed `int` switches | Correct comparisons/types while preserving stored bit patterns; examples in `Canvas.cpp` around line 5092 |
+| Plain `char` used for the `-1` help-dialog thread sentinel | Use an explicit signed 8-bit type so ARM cannot reinterpret the sentinel as index 255 |
 | `int*` cast to `float*` during viewport scaling in `GLES.cpp` | Replace type-punning with actual numeric conversion |
 | Relative save directory and shell-based creation | Explicit writable root and ordinary directory creation |
 | Repeated explicit destructor calls | Repair ownership at affected startup/shutdown and stream boundaries |
 | Missing mobile lifecycle handling | Pause/resume, input reset, persistence and graphics recovery |
 | Desktop window/renderer options persisted in config | Adapt or ignore inapplicable settings on Android |
 
-The exact Android compiler diagnostic list is still unknown. These findings do not claim that an Android compile has been attempted.
+Android Clang now compiles every engine source file for ARM64. The table records both fixed defects and remaining portability work found through compilation and phone testing.
 
 ## Risk ranking
 
@@ -359,11 +366,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Enter the first level and verify basic touch gameplay.**
+**Verify real-game lifecycle and save integrity on the Pixel.**
 
-Use the Pixel to choose a difficulty and reach the first playable scene. Check world geometry, sprites, HUD, transparency and fog, then try the existing on-screen movement and action regions. Keep audio silent and avoid changing controller support during this checkpoint.
+With the silent game running in the first level, test Home/resume and lock/unlock without reinstalling. Then force-stop and relaunch, use `Continue`, and confirm that the last completed save remains readable. Inspect save files before and after each transition so an interrupted write cannot be mistaken for a renderer or startup problem.
 
-The first success gate is a stable 3D frame followed by one successful movement and action through touch. Then perform one save/load round trip in the private save directory before moving to lifecycle or audio work.
+The success gate is a usable frame after each resume plus a clean process restart that restores the saved game. If interruption can leave a partial configuration or save file, make the smallest atomic-write fix before beginning audio integration.
 
 ## Source files informing the plan
 

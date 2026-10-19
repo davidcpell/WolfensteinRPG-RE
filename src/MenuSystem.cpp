@@ -3120,7 +3120,7 @@ void MenuSystem::select(int i) {
 			break;
 		}
 		case Menus::ACTION_DEBUG_FONT: {
-			app->canvas->enqueueHelpDialog(Strings::FILE_MENUSTRINGS, MenuStrings::FONT_TEST, (uint8_t)(-1));
+			app->canvas->enqueueHelpDialog(Strings::FILE_MENUSTRINGS, MenuStrings::FONT_TEST, -1);
 			this->returnToGame();
 			break;
 		}

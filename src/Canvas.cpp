@@ -4475,10 +4475,10 @@ void Canvas::dequeueHelpDialog(bool b) {
 }
 
 void Canvas::enqueueHelpDialog(short n) {
-	this->enqueueHelpDialog(Strings::FILE_CODESTRINGS, n, (uint8_t)(-1));
+	this->enqueueHelpDialog(Strings::FILE_CODESTRINGS, n, -1);
 }
 
-bool Canvas::enqueueHelpDialog(short n, short n2, uint8_t b) {
+bool Canvas::enqueueHelpDialog(short n, short n2, int8_t threadIndex) {
 	Applet* app = CAppContainer::getInstance()->app;
 
 	if (!app->player->enableHelp || this->isChickenKicking || this->state == Canvas::ST_DYING) {
@@ -4491,7 +4491,7 @@ bool Canvas::enqueueHelpDialog(short n, short n2, uint8_t b) {
 	this->helpMessageTypes[this->numHelpMessages] = Canvas::HELPMSG_TYPE_CODESTRING;
 	this->helpMessageInts[this->numHelpMessages] = (n << 16 | n2);
 	this->helpMessageObjs[this->numHelpMessages] = nullptr;
-	this->helpMessageThreads[this->numHelpMessages] = b;
+	this->helpMessageThreads[this->numHelpMessages] = threadIndex;
 	this->numHelpMessages++;
 	if (this->state != Canvas::ST_AUTOMAP && this->state == Canvas::ST_PLAYING) {
 		this->dequeueHelpDialog();

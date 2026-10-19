@@ -1,6 +1,8 @@
 #ifndef __CANVAS_H__
 #define __CANVAS_H__
 
+#include <cstdint>
+
 #include "Graphics.h"
 
 class Image;
@@ -318,7 +320,7 @@ public:
 	int helpMessageTypes[16];
 	int helpMessageInts[16];
 	void* helpMessageObjs[16];
-	char helpMessageThreads[16];
+	int8_t helpMessageThreads[16];
 	int numHelpMessages;
 	int renderSceneCount;
 	int staleTime;
@@ -493,7 +495,7 @@ public:
 	void dequeueHelpDialog();
 	void dequeueHelpDialog(bool b);
 	void enqueueHelpDialog(short n);
-	bool enqueueHelpDialog(short n, short n2, uint8_t b);
+	bool enqueueHelpDialog(short n, short n2, int8_t threadIndex);
 	bool enqueueHelpDialog(Text* text);
 	bool enqueueHelpDialog(Text* text, int n);
 	void enqueueHelpDialog(EntityDef* entityDef);
