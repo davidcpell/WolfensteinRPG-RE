@@ -29,10 +29,10 @@ int main(int argc, char* argv[])
 	int checked_gl_error = 0;
 	int running = 1;
 	const GLfloat quad_vertices[] = {
-		-1.2f, -0.7f,  0.0f,
-		 1.2f, -0.7f, -0.8f,
-		-1.2f,  0.7f,  0.0f,
-		 1.2f,  0.7f, -0.8f
+		-1.2f, -0.7f,
+		 1.2f, -0.7f,
+		-1.2f,  0.7f,
+		 1.2f,  0.7f
 	};
 	const GLfloat quad_texture_coordinates[] = {
 		0.0f, 0.0f,
@@ -40,8 +40,8 @@ int main(int argc, char* argv[])
 		0.0f, 1.0f,
 		1.0f, 1.0f
 	};
-	const GLfloat fog_color[] = {
-		0.75f, 0.12f, 0.08f, 1.0f
+	const GLfloat shift_color[] = {
+		64.0f / 255.0f, 0.0f, 0.0f, 0.0f
 	};
 
 	(void)argc;
@@ -163,32 +163,36 @@ int main(int argc, char* argv[])
 		}
 
 		glEnable(GL_TEXTURE_2D);
-		glEnable(GL_FOG);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, shift_color);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_ADD);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SRC0_RGB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SRC1_RGB, GL_CONSTANT);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SRC0_ALPHA, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SRC1_ALPHA, GL_PRIMARY_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL fog enable");
-		}
-		glFogf(GL_FOG_MODE, GL_LINEAR);
-		glFogfv(GL_FOG_COLOR, fog_color);
-		glFogf(GL_FOG_START, 0.0f);
-		glFogf(GL_FOG_END, 0.8f);
-		if (!checked_gl_error) {
-			log_gl_error("OpenGL fog parameters");
+			log_gl_error("OpenGL texture-combiner parameters");
 		}
 		glBindTexture(GL_TEXTURE_2D, checker_texture);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-		glVertexPointer(3, GL_FLOAT, 0, quad_vertices);
+		glVertexPointer(2, GL_FLOAT, 0, quad_vertices);
 		glTexCoordPointer(2, GL_FLOAT, 0, quad_texture_coordinates);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		if (!checked_gl_error) {
-			log_gl_error("OpenGL fogged draw");
+			log_gl_error("OpenGL texture-combined draw");
 		}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisable(GL_FOG);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glDisable(GL_TEXTURE_2D);
 
 		checked_gl_error = 1;
