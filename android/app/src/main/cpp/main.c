@@ -1,6 +1,17 @@
 #include <SDL.h>
 #include <SDL_opengles.h>
 
+static void log_gl_error(const char *operation)
+{
+	GLenum error = glGetError();
+
+	if (error == GL_NO_ERROR) {
+		SDL_Log("%s: no error", operation);
+	} else {
+		SDL_Log("%s error: 0x%04x", operation, error);
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	SDL_Window *window;
@@ -15,6 +26,7 @@ int main(int argc, char* argv[])
 	int checker_y;
 	int pixel_index;
 	int light_square;
+	int checked_gl_error = 0;
 	int running = 1;
 	const GLfloat quad_vertices[] = {
 		-1.2f, -0.7f,
@@ -96,7 +108,7 @@ int main(int argc, char* argv[])
 			checker_pixels[pixel_index + 0] = light_square ? 240 : 32;
 			checker_pixels[pixel_index + 1] = light_square ? 240 : 96;
 			checker_pixels[pixel_index + 2] = light_square ? 240 : 192;
-			checker_pixels[pixel_index + 3] = 255;
+			checker_pixels[pixel_index + 3] = light_square ? 0 : 255;
 		}
 	}
 
@@ -118,6 +130,7 @@ int main(int argc, char* argv[])
 		GL_UNSIGNED_BYTE,
 		checker_pixels
 	);
+	log_gl_error("OpenGL texture setup");
 
 	SDL_GL_SetSwapInterval(1);
 
@@ -142,7 +155,19 @@ int main(int argc, char* argv[])
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
+		if (!checked_gl_error) {
+			log_gl_error("OpenGL frame setup");
+		}
+
 		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_ALPHA_TEST);
+		if (!checked_gl_error) {
+			log_gl_error("OpenGL alpha-test enable");
+		}
+		glAlphaFunc(GL_GREATER, 0.0f);
+		if (!checked_gl_error) {
+			log_gl_error("OpenGL alpha function");
+		}
 		glBindTexture(GL_TEXTURE_2D, checker_texture);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -151,10 +176,16 @@ int main(int argc, char* argv[])
 		glVertexPointer(2, GL_FLOAT, 0, quad_vertices);
 		glTexCoordPointer(2, GL_FLOAT, 0, quad_texture_coordinates);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		if (!checked_gl_error) {
+			log_gl_error("OpenGL alpha-tested draw");
+		}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisable(GL_ALPHA_TEST);
 		glDisable(GL_TEXTURE_2D);
+
+		checked_gl_error = 1;
 
 		SDL_GL_SwapWindow(window);
 	}
