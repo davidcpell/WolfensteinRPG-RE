@@ -61,6 +61,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Entered the first level on the Pixel and verified textured 3D world geometry, sprites, the weapon view, HUD, transparency and the previously tested fixed-function effects in the combined game renderer.
 - Verified the latent touchscreen path in the real game. Touch advanced the intro, menus, dialogue and multi-page help; an upward swipe moved the player forward one grid square using the existing gameplay controls.
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
+- Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
@@ -69,12 +70,12 @@ The developer is experienced in software development, is learning C, and is new 
 - The GameSir Cyclone 2 has not been tested over USB-C.
 - Combat, inventory and complicated minigame touch interactions have not yet been verified on Android.
 - A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
-- Audio still uses the temporary silent OpenAL shim, and Android pause/resume has not yet been tested with the real engine.
+- Audio still uses the temporary silent OpenAL shim. Repeated lifecycle stress, graphics-context loss and interruption during an active save have not yet been tested.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Test the real engine's Android lifecycle and persistence on the Pixel. Exercise Home/resume, lock/unlock, forced stop/restart and `Continue`, while checking that completed configuration and save files remain readable. Keep the silent engine activity and graphics harness separate while lifecycle recovery is still being established.
+Harden configuration persistence against interruption. A previous APK installation caught `CONFIGFILENAME` during a direct write and left a partial file, even though the normal Home, lock and force-stop tests now pass. Write the replacement to the same directory, finish and close it, then atomically rename it over the previous configuration before beginning audio work.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -299,6 +300,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 9. Harden lifecycle and persistence
 
+- **Status:** Partial. Home/reopen, lock/unlock and force-stop/restart pass with the real engine on the Pixel, and the saved-game checksums remain stable. Configuration writes are still direct and have produced a partial file when interrupted by an APK installation.
 - **Objective:** Survive ordinary phone use. Start basic handling earlier; this milestone validates it systematically.
 - **Files/subsystems:** Main loop, SDL events, rendering resources, audio, input, saves and streams.
 - **Expected changes:** Pause safely, reset timing/input, recover graphics resources, persist atomically and repair affected cleanup ownership.
@@ -366,11 +368,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Verify real-game lifecycle and save integrity on the Pixel.**
+**Make configuration replacement atomic.**
 
-With the silent game running in the first level, test Home/resume and lock/unlock without reinstalling. Then force-stop and relaunch, use `Continue`, and confirm that the last completed save remains readable. Inspect save files before and after each transition so an interrupted write cannot be mistaken for a renderer or startup problem.
+Trace the `CONFIGFILENAME` write path and replace its direct overwrite with a temporary file in the same private save directory followed by an atomic rename. Preserve the previous valid file if opening, writing, flushing or closing the replacement fails. Keep this change limited to configuration until the pattern is understood and tested.
 
-The success gate is a usable frame after each resume plus a clean process restart that restores the saved game. If interruption can leave a partial configuration or save file, make the smallest atomic-write fix before beginning audio integration.
+The success gate is a normal configuration save/load round trip plus an interruption experiment that leaves either the old complete file or the new complete file, never a partial one. Apply the same pattern to other save files only after identifying which writes share the same risk.
 
 ## Source files informing the plan
 
