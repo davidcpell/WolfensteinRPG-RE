@@ -47,14 +47,14 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified the renderer's linear fixed-function fog calls on the Pixel. A textured quad spanning the configured eye-space depth range retained its original checker colors at the near edge and converged smoothly to the fog color at the far edge, with no GL errors.
 - Verified the `TexCombineShift` operation on the Pixel. The GLES headers require `GL_SRC0_*`/`GL_SRC1_*` parameter names instead of the desktop `GL_SOURCE0_*`/`GL_SOURCE1_*` names. Both `GL_TEXTURE0` and the portable GLES 1.1 `GL_TEXTURE` source worked on the Mali driver; the harness retains `GL_TEXTURE`. Adding a constant red tint produced the expected clamped RGB values while preserving alpha, with no GL errors.
 - Compiled every engine source file and the bundled hash library for Android ARM64 with Android Clang. The audit identified and corrected Android GLES header selection, direct GLES function declarations, `glOrtho` calls, texture-combiner names, missing standard `<algorithm>` includes and signed color-case constants.
-- Linked the compiled engine into a separate `libwolfenstein_engine_audit.so` alongside the unchanged graphics harness. The audit library uses an explicitly named no-op OpenAL shim until the real Android audio dependency is integrated.
+- Linked the compiled engine into a separate `libwolfenstein_engine_audit.so` alongside the unchanged graphics harness. The temporary no-op OpenAL shim used for the original link audit has now been replaced by OpenAL Soft.
 - Installed the linked APK on the Pixel and verified that Android loaded the engine-library dependency while the known-good texture-combiner harness continued to render with no GL or Java runtime errors.
 - Rebuilt the normal Visual Studio Debug target successfully after the shared-source portability changes. Its existing warnings remain, with no build errors.
 - Added a Storage Access Framework document-picker screen and imported the known-good IPA into persistent app-private storage. The 34,454,149-byte private copy matched the source and remained present after a forced stop and restart.
 - Added validation for the known-good `Payload/Wolf...RPG.app/Packages/` layout before atomic replacement. A deliberately incomplete ZIP was rejected for its missing required entry, while the existing valid private IPA remained unchanged.
 - Passed the private IPA pathname through the custom SDL activity into native `SDL_main`; the native harness opened the exact app-private path successfully.
 - Exercised the project's existing native `ZipFile` reader on the Pixel. It decompressed and checksummed `logo.bmp`, `strings.idx`, `tables.bin` and `sounds/Alarm.wav`, then continued into the GLES harness without errors.
-- Added a separate silent game activity while retaining the graphics harness as a diagnostic fallback. The engine now receives the app-private IPA and save-directory paths explicitly, and the temporary no-op OpenAL layer keeps this checkpoint silent.
+- Added a separate game activity while retaining the graphics harness as a diagnostic fallback. The engine receives the app-private IPA and save-directory paths explicitly; normal game startup now uses the real Android audio implementation.
 - Started the real engine on the Pixel from the imported IPA. It rendered the intro, advanced to the title/main menu through touch, and opened the Options and New Game difficulty menus without a native crash or missing-resource failure.
 - Corrected Android window setup to retain the full 2244 by 1008 drawable and render the original 480 by 320 view in a centered 1512 by 1008 viewport. Input coordinates now invert that letterbox transform before reaching the existing game touch handlers.
 - Added Android 17 immersive-mode handling to the game activity. The Pixel now hides the status and navigation bars when the game gains focus, and the briefing's top `Skip` and bottom `More` controls are fully visible.
@@ -64,19 +64,22 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
 - Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
+- Added OpenAL Soft 1.25.2 as a pinned submodule and static Android dependency using its OpenSL ES backend. An isolated harness played a generated 440 Hz PCM tone through the Pixel speaker and replayed it on touch without OpenAL errors.
+- Replaced the engine's silent OpenAL shim with OpenAL Soft. A controlled engine probe loaded `Music_Title.wav` and `Alarm.wav` through the existing IPA/WAV path, looped the title music and played the alarm over it; both sources completed or continued independently with no logged errors.
+- Verified normal game audio on the Pixel across intro effects, doors, weapons, enemies, fire ambience, destructible objects and switches. Music and sound-effect volume controls mute their categories independently. Audio stops and resumes cleanly across both Home/reopen and lock/unlock without doubling, distortion or disappearing.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- Inventory and complicated minigame touch interactions have not yet been verified on Android; broader combat coverage remains for later playtesting.
+- Inventory and complicated minigame touch interactions have not yet been verified on Android; broader combat coverage remains for later playtesting. Main-menu transitions are also less reliable to activate than Options submenus and may appear to require an inconsistent double tap; this observation is recorded for a later focused touch investigation.
 - A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
-- Audio still uses the temporary silent OpenAL shim. Repeated lifecycle stress, graphics-context loss and interruption during an active save have not yet been tested.
+- External audio-focus interruptions and output-route changes have not yet been tested. Repeated lifecycle stress, graphics-context loss and interruption during an active save also remain unfinished.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Harden configuration persistence against interruption. A previous APK installation caught `CONFIGFILENAME` during a direct write and left a partial file, even though the normal Home, lock and force-stop tests now pass. Write the replacement to the same directory, finish and close it, then atomically rename it over the previous configuration before beginning audio work.
+Reproduce and instrument the inconsistent main-menu tap behavior as a small touch-input checkpoint. Retain the interrupted `CONFIGFILENAME` write as a durability research note for later hardening; it is a reproduced edge case, but it does not block the next functional checkpoint.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -108,7 +111,7 @@ Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22
 - Adapting the existing renderer to OpenGL ES 1.1 should be smaller than converting it to shaders.
 - Copying the IPA privately should preserve most existing resource-loading code.
 - The existing mouse-to-touch path is sufficient for basic gameplay gestures; complete interaction coverage may still expose targeted fixes.
-- OpenAL Soft integration should mostly involve dependency/build setup plus lifecycle and failure handling.
+- OpenAL Soft provides working generated, imported and simultaneous game audio on the Pixel; external focus and route-change behavior remain to be demonstrated.
 
 ### Requires experiments
 
@@ -237,7 +240,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 3. Compile and link the existing game for Android
 
-- **Status:** Complete for the compile/link/load audit. Every engine and hash-library translation unit compiles for Android ARM64; the resulting audit library links and loads on the Pixel while the graphics harness remains the entry point. OpenAL is represented only by a clearly scoped no-op audit shim.
+- **Status:** Complete for the compile/link/load audit. Every engine and hash-library translation unit compiles for Android ARM64; the resulting library links and loads on the Pixel, and the temporary OpenAL audit shim has been replaced by OpenAL Soft.
 - **Objective:** Produce a loadable native game library before full game startup.
 - **Files/subsystems:** Root/src CMake files, SDL finder, hash-library target, platform headers and affected translation units.
 - **Expected changes:** Add an Android shared target while retaining desktop builds; use Android-built dependencies; exclude Windows resources; fix demonstrated portability defects.
@@ -281,6 +284,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 7. Enable audio
 
+- **Status:** Basic Android audio is complete on the Pixel. Generated PCM, imported effects, looping music, simultaneous music/effects, independent volume controls and Home/lock resume behavior pass. External audio-focus interruptions and output-route changes remain.
 - **Objective:** Play music and effects reliably.
 - **Files/subsystems:** `Sound`, OpenAL Soft build, `CAppContainer`, Android audio-focus integration.
 - **Expected changes:** Package the dependency, handle initialization failure, connect pause/resume and focus.
@@ -369,11 +373,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Make configuration replacement atomic.**
+**Instrument the inconsistent main-menu tap behavior.**
 
-Trace the `CONFIGFILENAME` write path and replace its direct overwrite with a temporary file in the same private save directory followed by an atomic rename. Preserve the previous valid file if opening, writing, flushing or closing the replacement fails. Keep this change limited to configuration until the pattern is understood and tested.
+Add narrowly scoped logging for one press/release sequence: physical coordinates, converted 480 by 320 coordinates, canvas state, selected menu item and dispatched action. Compare a failed or double-tap main-menu transition with a reliable one-tap Options submenu transition before changing input behavior.
 
-The success gate is a normal configuration save/load round trip plus an interruption experiment that leaves either the old complete file or the new complete file, never a partial one. Apply the same pattern to other save files only after identifying which writes share the same risk.
+The success gate is a concrete explanation of whether the first tap is intentionally selecting/focusing an item, being lost by state timing, missing its hit target or being duplicated by SDL's synthetic mouse/touch events. Make a fix only after the trace identifies the cause.
 
 ## Source files informing the plan
 

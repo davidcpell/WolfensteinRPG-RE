@@ -22,8 +22,55 @@
 #include "TinyGL.h"
 #include "Input.h"
 #include "JavaStream.h"
+#include "Sound.h"
 
 void drawView(SDLGL* sdlGL);
+
+#ifdef __ANDROID__
+static int runImportedAudioProbe(SDLGL* sdlGL) {
+    Sound* sound = CAppContainer::getInstance()->app->sound;
+    bool running = true;
+    bool effectWasPlaying = false;
+
+    if (!sound->cacheSounds()) {
+        SDL_Log("Imported audio probe could not allocate sound buffers");
+        return 1;
+    }
+
+    sound->playSound(1078, 1, 6, false);
+    SDL_Log("Imported audio probe started looping sounds/Music_Title.wav");
+
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+            } else if (event.type == SDL_MOUSEBUTTONUP) {
+                sound->playSound(1001, 0, 5, false);
+                SDL_Log("Imported sounds/Alarm.wav playback requested over title music");
+            }
+        }
+
+        bool effectPlaying = sound->isSoundPlaying(1001);
+        if (effectWasPlaying && !effectPlaying) {
+            SDL_Log("Imported Alarm.wav playback completed");
+        }
+        effectWasPlaying = effectPlaying;
+
+        glViewport(0, 0, sdlGL->vidWidth, sdlGL->vidHeight);
+        if (effectPlaying) {
+            glClearColor(0.05f, 0.45f, 0.12f, 1.0f);
+        } else {
+            glClearColor(0.05f, 0.12f, 0.45f, 1.0f);
+        }
+        glClear(GL_COLOR_BUFFER_BIT);
+        SDL_GL_SwapWindow(sdlGL->window);
+        SDL_Delay(16);
+    }
+
+    return 0;
+}
+#endif
 
 int main(int argc, char* args[]) {
     int		UpTime = 0;
@@ -56,6 +103,12 @@ int main(int argc, char* args[]) {
 
     CAppContainer::getInstance()->Construct(&sdlGL, &zipFile);
     sdlGL.updateVideo(); // [GEC]
+
+#ifdef __ANDROID__
+    if (argc >= 4 && strcmp(args[3], "--audio-probe") == 0) {
+        return runImportedAudioProbe(&sdlGL);
+    }
+#endif
 
     while (CAppContainer::getInstance()->app->closeApplet != true) {
         int currentTimeMillis = CAppContainer::getInstance()->getTimeMS();

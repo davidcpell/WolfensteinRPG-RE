@@ -1,3 +1,6 @@
 [submodule "android/app/src/main/cpp/SDL"]
 	path = android/app/src/main/cpp/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "android/app/src/main/cpp/openal-soft"]
+	path = android/app/src/main/cpp/openal-soft
+	url = https://github.com/kcat/openal-soft.git

@@ -93,8 +93,24 @@ public final class ImportActivity extends Activity {
                 runParams.setMargins(0, dp(12), 0, 0);
                 layout.addView(runHarnessButton, runParams);
 
+                Button runAudioButton = new Button(this);
+                runAudioButton.setText("Run audio harness");
+                runAudioButton.setOnClickListener(view ->
+                        startActivity(new Intent(this, WolfensteinAudioActivity.class)));
+                LinearLayout.LayoutParams audioParams = wrapContent();
+                audioParams.setMargins(0, dp(12), 0, 0);
+                layout.addView(runAudioButton, audioParams);
+
+                Button runImportedAudioButton = new Button(this);
+                runImportedAudioButton.setText("Test imported music + effect");
+                runImportedAudioButton.setOnClickListener(view ->
+                        startActivity(new Intent(this, WolfensteinImportedAudioActivity.class)));
+                LinearLayout.LayoutParams importedAudioParams = wrapContent();
+                importedAudioParams.setMargins(0, dp(12), 0, 0);
+                layout.addView(runImportedAudioButton, importedAudioParams);
+
                 Button runGameButton = new Button(this);
-                runGameButton.setText("Test silent game startup");
+                runGameButton.setText("Run game");
                 runGameButton.setOnClickListener(view ->
                         startActivity(new Intent(this, WolfensteinGameActivity.class)));
                 LinearLayout.LayoutParams gameParams = wrapContent();
