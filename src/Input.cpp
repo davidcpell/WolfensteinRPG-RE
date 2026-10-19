@@ -817,10 +817,10 @@ void Input::handleEvents() noexcept {
             }   break;
 
             case SDL_MOUSEMOTION: {
-                state = SDL_GetMouseState(&mX, &mY);
+                SDL_GetMouseState(&mX, &mY);
                 sdlGL->windowToGameCoordinates(
                     mX, mY, &gCurMouseX, &gCurMouseY);
-                if (state & SDL_BUTTON_LMASK) {
+                if (sdlEvent.motion.state & SDL_BUTTON_LMASK) {
                     CAppContainer::getInstance()->userMoved(gCurMouseX, gCurMouseY);
                 }
                 CAppContainer::getInstance()->UpdateAccelerometer(gCurMouseX, gCurMouseY, 0.0f, true);
