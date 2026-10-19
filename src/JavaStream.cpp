@@ -7,6 +7,8 @@
 #include "App.h"
 #include "ZipFile.h"
 
+const char* dir = "WolfensteinRPG.app";
+
 // ------------------
 // InputStream Class
 // ------------------

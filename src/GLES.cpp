@@ -142,8 +142,13 @@ void gles::BeginFrame(int x, int y, int w, int h, int* mtxView, int* mtxProjecti
 	this->vPortRect[2] = gles::scale * w;
 	this->vPortRect[3] = gles::scale * h;
 
-	CAppContainer::getInstance()->sdlGL->transformCoord2f((float*)&this->vPortRect[0], (float*)&this->vPortRect[1]);
-	CAppContainer::getInstance()->sdlGL->transformCoord2f((float*)&this->vPortRect[2], (float*)&this->vPortRect[3]);
+	int viewportX, viewportY, viewportWidth, viewportHeight;
+	CAppContainer::getInstance()->sdlGL->getDrawableViewport(
+		&viewportX, &viewportY, &viewportWidth, &viewportHeight);
+	this->vPortRect[0] = viewportX + this->vPortRect[0] * viewportWidth / Applet::IOS_WIDTH;
+	this->vPortRect[1] = viewportY + this->vPortRect[1] * viewportHeight / Applet::IOS_HEIGHT;
+	this->vPortRect[2] = this->vPortRect[2] * viewportWidth / Applet::IOS_WIDTH;
+	this->vPortRect[3] = this->vPortRect[3] * viewportHeight / Applet::IOS_HEIGHT;
 #endif
 	
 	//printf("this->vPortRect[0] %d\n", this->vPortRect[0]);
@@ -214,20 +219,14 @@ void gles::BeginFrame(int x, int y, int w, int h, int* mtxView, int* mtxProjecti
 
 void gles::ResetGLState() {
 	SDLGL* sdlGL = CAppContainer::getInstance()->sdlGL;
-	int width = sdlGL->vidWidth;
-	int height = sdlGL->vidHeight;
-
-	int cx, cy;
-	SDL_GetWindowSize(sdlGL->window, &cx, &cy);
-	if (width != cx || height != cy) {
-		width = cx; height = cy;
-	}
+	int viewportX, viewportY, width, height;
+	sdlGL->getDrawableViewport(&viewportX, &viewportY, &width, &height);
 
 	this->renderMode = -1;
 	glDisable(GL_FOG);
 	glDisable(GL_BLEND);
-	glViewport(0, 0, width, height);
-	glScissor(0, 0, width, height);
+	glViewport(viewportX, viewportY, width, height);
+	glScissor(viewportX, viewportY, width, height);
 	//glViewport(0, 0, 320, 480);
 	//glScissor(0, 0, 320, 480);
 	glMatrixMode(GL_PROJECTION);

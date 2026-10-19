@@ -64,7 +64,16 @@ bool SDLGL::Initialize() {
 			printf("Could not initialize SDL: %s", SDL_GetError());
 		}
 
+#ifdef __ANDROID__
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
+
 		flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN /* | SDL_WINDOW_RESIZABLE*/;
+#ifdef __ANDROID__
+		flags |= SDL_WINDOW_FULLSCREEN;
+#endif
 		// Set the highdpi flags - this makes a big difference on Macs with
 		// retina displays, especially when using small window sizes.
 		flags |= SDL_WINDOW_ALLOW_HIGHDPI;
@@ -93,6 +102,12 @@ bool SDLGL::Initialize() {
 		this->windowMode = 0;
 		this->oldVSync = false;
 		this->vSync = true;
+
+#ifdef __ANDROID__
+		this->windowMode = 2;
+		this->oldWindowMode = this->windowMode;
+		this->oldResolutionIndex = this->resolutionIndex;
+#endif
 
 		//SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
 		//SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
@@ -179,6 +194,56 @@ void SDLGL::transformCoord2f(float* x, float* y) {
 	SDL_GetWindowSize(this->window, &w, &h);
 	*x *= (float)w / (float)Applet::IOS_WIDTH;
 	*y *= (float)h / (float)Applet::IOS_HEIGHT;
+}
+
+void SDLGL::getDrawableViewport(int* x, int* y, int* width, int* height) {
+	int drawableWidth;
+	int drawableHeight;
+	SDL_GL_GetDrawableSize(this->window, &drawableWidth, &drawableHeight);
+
+	*x = 0;
+	*y = 0;
+	*width = drawableWidth;
+	*height = drawableHeight;
+
+#ifdef __ANDROID__
+	if (drawableWidth * Applet::IOS_HEIGHT > drawableHeight * Applet::IOS_WIDTH) {
+		*width = drawableHeight * Applet::IOS_WIDTH / Applet::IOS_HEIGHT;
+		*x = (drawableWidth - *width) / 2;
+	}
+	else {
+		*height = drawableWidth * Applet::IOS_HEIGHT / Applet::IOS_WIDTH;
+		*y = (drawableHeight - *height) / 2;
+	}
+#endif
+}
+
+void SDLGL::windowToGameCoordinates(
+	int windowX, int windowY, float* gameX, float* gameY) {
+	int windowWidth;
+	int windowHeight;
+	int drawableWidth;
+	int drawableHeight;
+	int viewportX;
+	int viewportY;
+	int viewportWidth;
+	int viewportHeight;
+
+	SDL_GetWindowSize(this->window, &windowWidth, &windowHeight);
+	SDL_GL_GetDrawableSize(this->window, &drawableWidth, &drawableHeight);
+	getDrawableViewport(&viewportX, &viewportY, &viewportWidth, &viewportHeight);
+
+	float viewportWindowX = (float)viewportX * windowWidth / drawableWidth;
+	float viewportWindowY = (float)viewportY * windowHeight / drawableHeight;
+	float viewportWindowWidth = (float)viewportWidth * windowWidth / drawableWidth;
+	float viewportWindowHeight = (float)viewportHeight * windowHeight / drawableHeight;
+
+	*gameX = (windowX - viewportWindowX) / viewportWindowWidth;
+	*gameY = (windowY - viewportWindowY) / viewportWindowHeight;
+	if (*gameX < 0.0f) *gameX = 0.0f;
+	if (*gameX > 1.0f) *gameX = 1.0f;
+	if (*gameY < 0.0f) *gameY = 0.0f;
+	if (*gameY > 1.0f) *gameY = 1.0f;
 }
 
 void SDLGL::centerMouse(int x, int y) {

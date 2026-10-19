@@ -54,24 +54,28 @@ The developer is experienced in software development, is learning C, and is new 
 - Added validation for the known-good `Payload/Wolf...RPG.app/Packages/` layout before atomic replacement. A deliberately incomplete ZIP was rejected for its missing required entry, while the existing valid private IPA remained unchanged.
 - Passed the private IPA pathname through the custom SDL activity into native `SDL_main`; the native harness opened the exact app-private path successfully.
 - Exercised the project's existing native `ZipFile` reader on the Pixel. It decompressed and checksummed `logo.bmp`, `strings.idx`, `tables.bin` and `sounds/Alarm.wav`, then continued into the GLES harness without errors.
+- Added a separate silent game activity while retaining the graphics harness as a diagnostic fallback. The engine now receives the app-private IPA and save-directory paths explicitly, and the temporary no-op OpenAL layer keeps this checkpoint silent.
+- Started the real engine on the Pixel from the imported IPA. It rendered the intro, advanced to the title/main menu through touch, and opened the Options and New Game difficulty menus without a native crash or missing-resource failure.
+- Corrected Android window setup to retain the full 2244 by 1008 drawable and render the original 480 by 320 view in a centered 1512 by 1008 viewport. Input coordinates now invert that letterbox transform before reaching the existing game touch handlers.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- The engine has not yet replaced the synthetic harness as the Android entry point, and actual game startup has not been attempted.
-- Actual game startup, save paths, audio, game input and touch integration have not started.
-- The current APK is an isolated graphics harness and does not contain proprietary game resources.
+- A rendered 3D level, gameplay controls and complicated minigame touch interactions have not yet been verified on Android.
+- The private save directory is supplied to the engine, but save/load behavior has not been tested.
+- Audio still uses the temporary silent OpenAL shim, and Android pause/resume has not yet been tested with the real engine.
+- The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Attempt controlled, silent game startup using the validated private IPA. Replace the synthetic entry point only after adapting `Main.cpp` to accept the supplied IPA path and an app-private save root, and keep failures visible in the Android log. The first visual target is the title or menu, with the current harness retained as a diagnostic fallback until that path works.
+Enter a new game on the Pixel and verify the first 3D scene, HUD and basic touch controls. Keep the silent engine activity and graphics harness separate until level rendering, touch movement and a save/load round trip are understood.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
 ## Evidence and confidence
 
-Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android work recorded above supersedes that limitation for isolated GLES tests and for compiling, linking and loading the engine audit library. Actual game startup is still untested.
+Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22a8e7e` (Add Windows build support). That initial review did not compile for Android or test an Android device. The Android work recorded above supersedes that limitation through real silent engine startup and touch-driven main-menu navigation. First-level gameplay is still untested.
 
 ### Confirmed from source
 
@@ -237,7 +241,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 4. Import the user's IPA and establish writable paths
 
-- **Status:** IPA selection, validation, atomic private copying, restart persistence, native path handoff and representative native resource reads are complete on the Pixel. Explicit save/settings paths remain for the startup chunk.
+- **Status:** IPA selection, validation, atomic private copying, restart persistence, native path handoff and representative native resource reads are complete on the Pixel. The engine receives an app-private save path; save/load behavior still needs verification.
 - **Objective:** Implement the real first-launch data flow.
 - **Files/subsystems:** Android picker bridge, `Main`, `ZipFile`, `JavaStream`, configuration paths.
 - **Expected changes:** Temporary private copy, validation, atomic installation, explicit resource/save paths and recoverable errors.
@@ -248,6 +252,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 5. Display actual game content, initially silent
 
+- **Status:** Partial. The Pixel reaches the intro, title/main menu, Options menu and difficulty menu from the imported IPA with the silent engine. The centered 3:2 viewport is correct; a rendered level remains to be verified.
 - **Objective:** Show the title/menu and a rendered level.
 - **Files/subsystems:** `SDLGL`, `Main`, `GLES`, `Image`, `Graphics`, `Render`, `TinyGL`.
 - **Expected changes:** Apply proven graphics adaptations, correct viewport conversions, scale the 480x320 logical display without distortion, and allow safe silent startup.
@@ -354,11 +359,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Attempt controlled, silent startup from the validated private IPA.**
+**Enter the first level and verify basic touch gameplay.**
 
-Adapt the engine entry point to receive the imported IPA's absolute path instead of opening `Wolfenstein RPG.ipa` relative to the process directory. Supply a separate app-private save root, bypass real audio initialization through the existing audit shim, and start with Android log evidence before relying on a complete frame.
+Use the Pixel to choose a difficulty and reach the first playable scene. Check world geometry, sprites, HUD, transparency and fog, then try the existing on-screen movement and action regions. Keep audio silent and avoid changing controller support during this checkpoint.
 
-The first success gate is reaching the title or menu without a missing-resource failure while keeping the process alive. If startup fails, preserve the graphics harness and isolate the first failing subsystem rather than mixing importer, renderer and input changes.
+The first success gate is a stable 3D frame followed by one successful movement and action through touch. Then perform one save/load round trip in the private save directory before moving to lifecycle or audio work.
 
 ## Source files informing the plan
 

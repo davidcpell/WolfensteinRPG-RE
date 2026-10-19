@@ -42,6 +42,8 @@ public:
 	void Error(const char* fmt, ...);
 
 	void transformCoord2f(float* x, float* y);
+	void getDrawableViewport(int* x, int* y, int* width, int* height);
+	void windowToGameCoordinates(int windowX, int windowY, float* gameX, float* gameY);
 	void centerMouse(int x, int y);
 	void updateWinVid(int w, int h);
 	void updateVideo();

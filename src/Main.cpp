@@ -21,18 +21,32 @@
 #include "Utils.h"
 #include "TinyGL.h"
 #include "Input.h"
+#include "JavaStream.h"
 
 void drawView(SDLGL* sdlGL);
 
 int main(int argc, char* args[]) {
     int		UpTime = 0;
 
+#ifdef __ANDROID__
+    if (argc < 3) {
+        SDL_Log("Game startup requires an IPA path and save directory");
+        return 1;
+    }
+    const char* ipaPath = args[1];
+    dir = args[2];
+    SDL_Log("Starting engine with IPA: %s", ipaPath);
+    SDL_Log("Engine save directory: %s", dir);
+#else
+    const char* ipaPath = "Wolfenstein RPG.ipa";
+#endif
+
     if (UpTime == 0) {
         UpTime = CAppContainer::getInstance()->getTimeMS();
     }
     
     ZipFile zipFile;
-    zipFile.openZipFile("Wolfenstein RPG.ipa");
+    zipFile.openZipFile(ipaPath);
 
 	SDLGL sdlGL;
 	sdlGL.Initialize();
@@ -66,20 +80,17 @@ static uint32_t lastTimems = 0;
 
 void drawView(SDLGL *sdlGL) {
 
-    int cx, cy;
-    int w = sdlGL->vidWidth;
-    int h = sdlGL->vidHeight;
+    int viewportX, viewportY, viewportWidth, viewportHeight;
 
     if (lastTimems == 0) {
         lastTimems = CAppContainer::getInstance()->getTimeMS();
     }
 
-    SDL_GetWindowSize(sdlGL->window, &cx, &cy);
-    if (w != cx || h != cy) {
-        w = cx; h = cy;
-    }
-
-    glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+    sdlGL->getDrawableViewport(
+        &viewportX, &viewportY, &viewportWidth, &viewportHeight);
+    glViewport(
+        viewportX, viewportY,
+        (GLsizei)viewportWidth, (GLsizei)viewportHeight);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_ALPHA_TEST);
     glMatrixMode(GL_PROJECTION);
@@ -107,6 +118,20 @@ void drawView(SDLGL *sdlGL) {
     //printf("passedTime %d\n", passedTime);
 
     CAppContainer::getInstance()->DoLoop(passedTime);
+
+#ifdef __ANDROID__
+    static bool loggedViewport = false;
+    if (!loggedViewport) {
+        GLint actualViewport[4];
+        glGetIntegerv(GL_VIEWPORT, actualViewport);
+        SDL_Log(
+            "Engine viewport after draw: %d,%d %dx%d (requested %d,%d %dx%d)",
+            actualViewport[0], actualViewport[1],
+            actualViewport[2], actualViewport[3],
+            viewportX, viewportY, viewportWidth, viewportHeight);
+        loggedViewport = true;
+    }
+#endif
 
     SDL_GL_SwapWindow(sdlGL->window);  // Swap the window/pBmp to display the result.
     

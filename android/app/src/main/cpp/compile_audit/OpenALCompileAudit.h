@@ -1,9 +1,8 @@
 #ifndef WOLFENSTEIN_OPENAL_COMPILE_AUDIT_H
 #define WOLFENSTEIN_OPENAL_COMPILE_AUDIT_H
 
-// Declarations used only to let the Android compile audit proceed before an
-// actual OpenAL implementation is added. This header is never linked into the
-// runnable graphics harness.
+// Temporary silent OpenAL declarations used by the Android engine build until
+// an actual Android audio implementation is added.
 
 typedef char ALchar;
 typedef int ALenum;

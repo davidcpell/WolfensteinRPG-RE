@@ -92,6 +92,14 @@ public final class ImportActivity extends Activity {
                 LinearLayout.LayoutParams runParams = wrapContent();
                 runParams.setMargins(0, dp(12), 0, 0);
                 layout.addView(runHarnessButton, runParams);
+
+                Button runGameButton = new Button(this);
+                runGameButton.setText("Test silent game startup");
+                runGameButton.setOnClickListener(view ->
+                        startActivity(new Intent(this, WolfensteinGameActivity.class)));
+                LinearLayout.LayoutParams gameParams = wrapContent();
+                gameParams.setMargins(0, dp(12), 0, 0);
+                layout.addView(runGameButton, gameParams);
             } else {
                 statusView.setText("Private copy is not supported: " + validationError);
             }

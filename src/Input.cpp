@@ -716,8 +716,6 @@ void Input::handleEvents() noexcept {
     SDLGL* sdlGL = CAppContainer::getInstance()->sdlGL;
     Canvas* canvas = CAppContainer::getInstance()->app->canvas;
 
-    int winVidWidth = sdlGL->winVidWidth;
-    int winVidHeight = sdlGL->winVidHeight;
     Uint8 state;
     int mX, mY;           /* mouse location*/
     int i, j;
@@ -801,13 +799,18 @@ void Input::handleEvents() noexcept {
             case SDL_MOUSEBUTTONDOWN: {
                 state = SDL_GetMouseState(&mX, &mY);
                 if (state & SDL_BUTTON_LMASK) {
-                    gBegMouseX = (float)((mX) * (1.0f / winVidWidth));
-                    gBegMouseY = (float)((mY) * (1.0f / winVidHeight));
+                    sdlGL->windowToGameCoordinates(
+                        mX, mY, &gBegMouseX, &gBegMouseY);
+                    gCurMouseX = gBegMouseX;
+                    gCurMouseY = gBegMouseY;
                     CAppContainer::getInstance()->userPressed(gBegMouseX, gBegMouseY);
                 }
             }   break;
 
             case SDL_MOUSEBUTTONUP: {
+                SDL_GetMouseState(&mX, &mY);
+                sdlGL->windowToGameCoordinates(
+                    mX, mY, &gCurMouseX, &gCurMouseY);
                 CAppContainer::getInstance()->userReleased(gCurMouseX, gCurMouseY);
                 CAppContainer::getInstance()->unHighlightButtons();
                 CAppContainer::getInstance()->TestCheatEntry(gCurMouseX, gCurMouseY);
@@ -815,8 +818,8 @@ void Input::handleEvents() noexcept {
 
             case SDL_MOUSEMOTION: {
                 state = SDL_GetMouseState(&mX, &mY);
-                gCurMouseX = (float)((mX) * (1.0f / winVidWidth));
-                gCurMouseY = (float)((mY) * (1.0f / winVidHeight));
+                sdlGL->windowToGameCoordinates(
+                    mX, mY, &gCurMouseX, &gCurMouseY);
                 if (state & SDL_BUTTON_LMASK) {
                     CAppContainer::getInstance()->userMoved(gCurMouseX, gCurMouseY);
                 }
