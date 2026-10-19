@@ -2005,10 +2005,10 @@ void MenuSystem::initMenu(int menu) {
 				this->items[n15].flags |= Menus::ITEM_ALIGN_CENTER;
 			}
 			this->addItem(MenuSystem::EMPTY_TEXT, MenuSystem::EMPTY_TEXT, 73);
-			this->setItemsFromText(this->numItems, this->detailsHelpText, app->canvas->ingameScrollWithBarMaxChars, 0, 0);
+			this->setItemsFromText(this->numItems, this->detailsHelpText, app->canvas->menuRect[2] / Applet::CHAR_SPACING[app->fontType], 0, 0);
 			if (statStr != nullptr) {
 				this->addItem(MenuSystem::EMPTY_TEXT, MenuSystem::EMPTY_TEXT, 73);
-				this->setItemsFromText(this->numItems, statStr, app->canvas->ingameScrollWithBarMaxChars, 0, 0);
+				this->setItemsFromText(this->numItems, statStr, app->canvas->menuRect[2] / Applet::CHAR_SPACING[app->fontType], 0, 0);
 				statStr->dispose();
 			}
 			this->detailsTitle->dispose();

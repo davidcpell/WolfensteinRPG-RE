@@ -62,6 +62,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified the latent touchscreen path in the real game. Touch advanced the intro, menus, dialogue and multi-page help; an upward swipe moved the player forward one grid square using the existing gameplay controls.
 - Verified the first touchscreen combat encounter on the Pixel: the player fought and killed the first enemy successfully.
 - Fixed intermittent first-tap failures in the main and in-game menus. SDL's Android mouse emulation queued a cursor-motion event immediately before finger-down; the input adapter read the later global button state and misclassified that earlier hover as a drag, so the following release was consumed by menu scrolling. Motion now uses the button state captured on its own SDL event. Five repeated main-menu Options transitions plus in-game Save Game and Load Game transitions all responded to single taps on the Pixel.
+- Completed an inventory touch smoke test across the available categories, item selection and detail views. The Gold Goblet description exposed a shared menu-layout bug on both Android and the pre-fix Windows build: detail text used a full-canvas wrapping limit despite being drawn inside a 340-pixel panel. Descriptions and weapon/armor stat text now wrap to the actual panel width; the corrected Gold Goblet text was verified on the Pixel.
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
 - Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
@@ -73,14 +74,14 @@ The developer is experienced in software development, is learning C, and is new 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- Inventory and complicated minigame touch interactions have not yet been verified on Android; broader combat coverage remains for later playtesting.
+- Complicated minigame touch interactions have not yet been verified on Android; broader combat and inventory coverage remain for later playtesting.
 - A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
 - External audio-focus interruptions and output-route changes have not yet been tested. Repeated lifecycle stress, graphics-context loss and interruption during an active save also remain unfinished.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Smoke-test the inventory and item interaction screens with touch as the next bounded input checkpoint. Retain the interrupted `CONFIGFILENAME` write as a durability research note for later hardening; it is a reproduced edge case, but it does not block the next functional checkpoint.
+Continue normal play through a broader combat section and record the next newly encountered interaction or rendering failure. Retain the interrupted `CONFIGFILENAME` write as a durability research note for later hardening; it is a reproduced edge case, but it does not block the next functional checkpoint.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -274,7 +275,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 6. Establish complete touch input
 
-- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, basic forward movement and the first successful combat encounter on the Pixel. An SDL event-state fix also makes the main-menu Options and in-game Save/Load transitions respond reliably to one tap. Inventory, minigames, broader combat and complete-campaign coverage remain.
+- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, basic forward movement, inventory interaction and the first successful combat encounter on the Pixel. An SDL event-state fix also makes the main-menu Options and in-game Save/Load transitions respond reliably to one tap. Minigames, broader combat and complete-campaign coverage remain.
 - **Objective:** Make the game playable using the phone's touchscreen.
 - **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames` and other touch-oriented minigames.
 - **Expected changes:** Connect SDL finger events to the existing touch handlers; preserve the 480 by 320 logical coordinate system; correct scaling, gestures, hit detection and Android system-edge behavior where testing exposes problems.
@@ -374,11 +375,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Smoke-test inventory and item interaction with touch.**
+**Continue a bounded normal-play touch test.**
 
-Use the existing saved game to open the inventory and exercise the item screens that are currently reachable: switch categories, select an item, view its details and return to play. Record any screen that needs repeated taps, has an unreachable control or confuses a swipe with a tap.
+Continue from the existing save through the next combat section, using touch for movement, combat, pickups, dialogs and any newly encountered interface. Stop at the first reproducible functional or rendering failure so it can be isolated before more code changes.
 
-The success gate is one complete inventory round trip using single taps and ordinary swipes, with the selected item and game state preserved on return. If a failure appears, instrument only that interaction before changing behavior.
+The success gate is completing that section and saving afterward without repeated taps, unreachable controls, incorrect text layout or a native crash. A newly encountered minigame becomes its own focused checkpoint rather than being folded into general playtesting.
 
 ## Source files informing the plan
 
