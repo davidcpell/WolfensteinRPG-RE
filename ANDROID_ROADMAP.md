@@ -23,7 +23,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Use an Android emulator for routine development, with physical-phone checks at specific milestones.
 - Keep game logic unchanged where possible, reuse SDL2, and avoid a speculative renderer rewrite.
 
-## Current state as of 2026-10-13
+## Current state as of 2026-10-18
 
 ### Completed and verified
 
@@ -38,10 +38,13 @@ The developer is experienced in software development, is learning C, and is new 
 - Rendered a solid-color frame, a smoothly interpolated vertex-colored triangle, and a generated 4 by 4 RGBA checkerboard texture.
 - Verified GLES 1.1 matrix operations, `glOrthof`, vertex/color/texture-coordinate client arrays, texture upload, nearest filtering and `glDrawArrays`.
 - Corrected the activity configuration to handle SDL display changes without starting a second native window. The final checkerboard build remained alive after the display-change interval that previously exposed the issue.
+- Installed and launched the ARM64 debug APK on the Pixel 9 Pro XL running Android 17. The checkerboard rendered correctly in a 2244 by 1008 landscape drawable.
+- The Pixel reported OpenGL vendor `ARM`, renderer `Mali-G715` and `OpenGL ES-CM 1.1` from the production phone driver.
+- Verified a Home/resume cycle: Android destroyed and recreated the SDL surface, the same process survived, and rendering recovered without a crash or ANR.
+- Rotated between both landscape orientations. SDL received the surface changes and the checkerboard remained correct.
 
 ### Deferred or not started
 
-- The harness has not run on the Pixel 9 Pro XL. Real Pixel GPU behavior, lifecycle behavior and the reported GLES implementation remain unverified.
 - The GameSir Cyclone 2 has not been tested over USB-C.
 - The existing game engine has not been compiled or linked into the Android APK.
 - IPA selection/import, game-resource loading, saves, audio, game input and touch integration have not started.
@@ -49,7 +52,7 @@ The developer is experienced in software development, is learning C, and is new 
 
 ### Next recommended checkpoint
 
-Install the current ARM64 harness on the Pixel, record its GLES vendor/renderer/version, and verify the checkerboard through pause/resume and orientation changes. After that phone checkpoint, continue the isolated GLES tests with alpha testing/blending, fog and the texture-combiner behavior used by the existing renderer before attempting to link the full game.
+Continue the isolated GLES tests with alpha testing, blending, fog and the texture-combiner behavior used by the existing renderer. Validate each operation on the emulator and Pixel before attempting to link the full game.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -188,7 +191,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 1. Launch a minimal Android app
 
-- **Status:** Emulator portion complete through textured rendering. Pixel validation remains pending.
+- **Status:** Complete on the emulator and Pixel, including textured rendering, Home/resume and landscape-orientation changes.
 - **Objective:** Run native code and display a solid color.
 - **Files/subsystems:** New minimal Android wrapper, SDL Android template and isolated graphics harness.
 - **Expected changes:** Pin build tools/SDL, add emulator and phone build targets, request a GLES1 drawing context, create a landscape surface.
@@ -199,7 +202,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 2. Test the game's graphics features in isolation
 
-- **Status:** In progress. Basic matrices, client arrays, texture upload/filtering and textured drawing work on the emulator; alpha testing/blending, fog, texture combiners and Pixel behavior remain to be tested.
+- **Status:** In progress. Basic matrices, client arrays, texture upload/filtering and textured drawing work on both the emulator and Pixel; alpha testing/blending, fog and texture combiners remain to be tested.
 - **Objective:** Test GLES1 viability before substantial port work.
 - **Files/subsystems:** Small graphics harness informed by `GLES`, `Image` and `Graphics`.
 - **Expected changes:** Draw synthetic textured shapes using the game's texture formats, alpha testing, fog and corrected tint combiner.
@@ -336,11 +339,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Validate the current textured GLES 1.1 harness on the Pixel 9 Pro XL.**
+**Add an isolated alpha-test experiment to the GLES 1.1 harness.**
 
-Install the existing ARM64 debug build on the phone, launch it, and confirm that the generated blue-and-white checkerboard renders correctly in landscape. Record the reported GLES vendor, renderer, version and drawable size. Then send the app to the background and resume it, and exercise an orientation change, to expose basic Android lifecycle or surface-recreation problems. This is a validation chunk; it should not add game loading, audio, controls or new rendering features.
+Extend the generated texture with transparent and opaque pixels, draw it over a contrasting background, and use GLES 1.1 alpha testing to discard pixels below a clear threshold. Verify the expected shape and check for GL errors on the emulator, then repeat the same test on the Pixel. Explain the texture's alpha channel and how alpha testing differs from blending. Keep blending, fog, texture combiners and game code out of this chunk.
 
-After that: add isolated tests for alpha testing/blending, fog and the texture-combiner behavior used by the existing renderer. Validate each effect on the emulator and Pixel before performing the full-game NDK compile/link audit. The document-picker-to-resource path follows that audit.
+After that: test blending, fog and the texture-combiner behavior one at a time. Then perform the full-game NDK compile/link audit. The document-picker-to-resource path follows that audit.
 
 ## Source files informing the plan
 
