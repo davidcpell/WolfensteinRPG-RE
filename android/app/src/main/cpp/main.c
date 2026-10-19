@@ -1,5 +1,8 @@
 #include <SDL.h>
 #include <SDL_opengles.h>
+#include <stdio.h>
+
+extern int wolfenstein_probe_ipa(const char *path);
 
 static void log_gl_error(const char *operation)
 {
@@ -28,6 +31,8 @@ int main(int argc, char* argv[])
 	int light_square;
 	int checked_gl_error = 0;
 	int running = 1;
+	FILE *ipa_file;
+	long ipa_size;
 	const GLfloat quad_vertices[] = {
 		-1.2f, -0.7f,
 		 1.2f, -0.7f,
@@ -44,11 +49,29 @@ int main(int argc, char* argv[])
 		64.0f / 255.0f, 0.0f, 0.0f, 0.0f
 	};
 
-	(void)argc;
-	(void)argv;
+	if (argc < 2) {
+		SDL_Log("No imported IPA path was supplied");
+		return 1;
+	}
+
+	ipa_file = fopen(argv[1], "rb");
+	if (ipa_file == NULL) {
+		SDL_Log("Could not open imported IPA: %s", argv[1]);
+		return 1;
+	}
+	fseek(ipa_file, 0, SEEK_END);
+	ipa_size = ftell(ipa_file);
+	fclose(ipa_file);
+	SDL_Log("Imported IPA opened: %s (%ld bytes)", argv[1], ipa_size);
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		SDL_Log("SDL_Init failed: %s", SDL_GetError());
+		return 1;
+	}
+
+	if (!wolfenstein_probe_ipa(argv[1])) {
+		SDL_Log("Native IPA resource probe failed");
+		SDL_Quit();
 		return 1;
 	}
 

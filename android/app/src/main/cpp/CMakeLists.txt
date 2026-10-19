@@ -41,10 +41,12 @@ add_library(wolfenstein_engine_audit SHARED
     $<TARGET_OBJECTS:wolfenstein_engine_compile>
     $<TARGET_OBJECTS:wolfenstein_hash_compile>
     compile_audit/OpenALCompileAudit.cpp
+    ResourceProbe.cpp
 )
 
 target_include_directories(wolfenstein_engine_audit PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/compile_audit"
+    "${WOLFENSTEIN_REPOSITORY_ROOT}/src"
 )
 
 target_link_libraries(wolfenstein_engine_audit PRIVATE

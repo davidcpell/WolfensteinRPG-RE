@@ -50,18 +50,22 @@ The developer is experienced in software development, is learning C, and is new 
 - Linked the compiled engine into a separate `libwolfenstein_engine_audit.so` alongside the unchanged graphics harness. The audit library uses an explicitly named no-op OpenAL shim until the real Android audio dependency is integrated.
 - Installed the linked APK on the Pixel and verified that Android loaded the engine-library dependency while the known-good texture-combiner harness continued to render with no GL or Java runtime errors.
 - Rebuilt the normal Visual Studio Debug target successfully after the shared-source portability changes. Its existing warnings remain, with no build errors.
+- Added a Storage Access Framework document-picker screen and imported the known-good IPA into persistent app-private storage. The 34,454,149-byte private copy matched the source and remained present after a forced stop and restart.
+- Added validation for the known-good `Payload/Wolf...RPG.app/Packages/` layout before atomic replacement. A deliberately incomplete ZIP was rejected for its missing required entry, while the existing valid private IPA remained unchanged.
+- Passed the private IPA pathname through the custom SDL activity into native `SDL_main`; the native harness opened the exact app-private path successfully.
+- Exercised the project's existing native `ZipFile` reader on the Pixel. It decompressed and checksummed `logo.bmp`, `strings.idx`, `tables.bin` and `sounds/Alarm.wav`, then continued into the GLES harness without errors.
 - The API 37 x86-64 emulator's GLES1 encoder is not reliable for alpha-function validation: both `glAlphaFunc` and `glAlphaFuncx` returned `GL_INVALID_OPERATION`, and querying `glIsEnabled(GL_ALPHA_TEST)` crashed inside the emulator's GLES1 encoder. Treat the Pixel as authoritative for the remaining fixed-function state experiments.
 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
 - The engine has not yet replaced the synthetic harness as the Android entry point, and actual game startup has not been attempted.
-- IPA selection/import, game-resource loading, saves, audio, game input and touch integration have not started.
+- Actual game startup, save paths, audio, game input and touch integration have not started.
 - The current APK is an isolated graphics harness and does not contain proprietary game resources.
 
 ### Next recommended checkpoint
 
-Begin the IPA import path while retaining the graphics harness as the Android entry point. Start with the Android document picker and a persistent private copy, then validate one known-good archive layout and pass its real path to native code. This supplies the resource prerequisite needed before attempting game startup.
+Attempt controlled, silent game startup using the validated private IPA. Replace the synthetic entry point only after adapting `Main.cpp` to accept the supplied IPA path and an app-private save root, and keep failures visible in the Android log. The first visual target is the title or menu, with the current harness retained as a diagnostic fallback until that path works.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -233,6 +237,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 4. Import the user's IPA and establish writable paths
 
+- **Status:** IPA selection, validation, atomic private copying, restart persistence, native path handoff and representative native resource reads are complete on the Pixel. Explicit save/settings paths remain for the startup chunk.
 - **Objective:** Implement the real first-launch data flow.
 - **Files/subsystems:** Android picker bridge, `Main`, `ZipFile`, `JavaStream`, configuration paths.
 - **Expected changes:** Temporary private copy, validation, atomic installation, explicit resource/save paths and recoverable errors.
@@ -349,11 +354,11 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 ## Immediate next chunk
 
-**Create the first IPA-selection and private-copy path without starting the game.**
+**Attempt controlled, silent startup from the validated private IPA.**
 
-Add a small Android launch flow that uses the system document picker to select an IPA, copies it into persistent app-private storage and reports success or a recoverable error. Keep the native graphics harness available so this storage work is isolated from engine startup. Do not extract the archive or add support for multiple layouts yet.
+Adapt the engine entry point to receive the imported IPA's absolute path instead of opening `Wolfenstein RPG.ipa` relative to the process directory. Supply a separate app-private save root, bypass real audio initialization through the existing audit shim, and start with Android log evidence before relying on a complete frame.
 
-The first success gate is selecting the known-good IPA on the Pixel, completing the private copy, restarting the app and confirming that the copied file is still present and readable. After that, validate the expected archive paths and pass the private pathname into native startup.
+The first success gate is reaching the title or menu without a missing-resource failure while keeping the process alive. If startup fails, preserve the graphics harness and isolate the first failing subsystem rather than mixing importer, renderer and input changes.
 
 ## Source files informing the plan
 
