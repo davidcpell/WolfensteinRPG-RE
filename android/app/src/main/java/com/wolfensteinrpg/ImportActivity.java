@@ -73,7 +73,6 @@ public final class ImportActivity extends Activity {
 
         importButton = new Button(this);
         importButton.setOnClickListener(view -> openDocumentPicker());
-        layout.addView(importButton, wrapContent());
 
         File privateIpa = getPrivateIpaFile();
         if (privateIpa.isFile()) {
@@ -85,45 +84,25 @@ public final class ImportActivity extends Activity {
                         "Known-good IPA layout validated\n%,d bytes",
                         privateIpa.length()));
 
-                Button runHarnessButton = new Button(this);
-                runHarnessButton.setText("Run graphics harness");
-                runHarnessButton.setOnClickListener(view ->
-                        startActivity(new Intent(this, WolfensteinSdlActivity.class)));
-                LinearLayout.LayoutParams runParams = wrapContent();
-                runParams.setMargins(0, dp(12), 0, 0);
-                layout.addView(runHarnessButton, runParams);
-
-                Button runAudioButton = new Button(this);
-                runAudioButton.setText("Run audio harness");
-                runAudioButton.setOnClickListener(view ->
-                        startActivity(new Intent(this, WolfensteinAudioActivity.class)));
-                LinearLayout.LayoutParams audioParams = wrapContent();
-                audioParams.setMargins(0, dp(12), 0, 0);
-                layout.addView(runAudioButton, audioParams);
-
-                Button runImportedAudioButton = new Button(this);
-                runImportedAudioButton.setText("Test imported music + effect");
-                runImportedAudioButton.setOnClickListener(view ->
-                        startActivity(new Intent(this, WolfensteinImportedAudioActivity.class)));
-                LinearLayout.LayoutParams importedAudioParams = wrapContent();
-                importedAudioParams.setMargins(0, dp(12), 0, 0);
-                layout.addView(runImportedAudioButton, importedAudioParams);
-
                 Button runGameButton = new Button(this);
                 runGameButton.setText("Run game");
                 runGameButton.setOnClickListener(view ->
                         startActivity(new Intent(this, WolfensteinGameActivity.class)));
-                LinearLayout.LayoutParams gameParams = wrapContent();
-                gameParams.setMargins(0, dp(12), 0, 0);
-                layout.addView(runGameButton, gameParams);
+                layout.addView(runGameButton, wrapContent());
+
+                LinearLayout.LayoutParams importParams = wrapContent();
+                importParams.setMargins(0, dp(12), 0, 0);
+                layout.addView(importButton, importParams);
             } else {
                 statusView.setText("Private copy is not supported: " + validationError);
+                layout.addView(importButton, wrapContent());
             }
         } else {
             importButton.setText("Select IPA");
             statusView.setText(
                     "Choose your Wolfenstein RPG IPA.\n" +
                     "The app will keep a private copy for later tests.");
+            layout.addView(importButton, wrapContent());
         }
 
         setContentView(layout);

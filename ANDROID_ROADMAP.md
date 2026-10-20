@@ -23,7 +23,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Use an Android emulator for routine development, with physical-phone checks at specific milestones.
 - Keep game logic unchanged where possible, reuse SDL2, and avoid a speculative renderer rewrite.
 
-## Current state as of 2026-10-18
+## Current state as of 2026-10-19
 
 ### Completed and verified
 
@@ -63,6 +63,8 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified the first touchscreen combat encounter on the Pixel: the player fought and killed the first enemy successfully.
 - Fixed intermittent first-tap failures in the main and in-game menus. SDL's Android mouse emulation queued a cursor-motion event immediately before finger-down; the input adapter read the later global button state and misclassified that earlier hover as a drag, so the following release was consumed by menu scrolling. Motion now uses the button state captured on its own SDL event. Five repeated main-menu Options transitions plus in-game Save Game and Load Game transitions all responded to single taps on the Pixel.
 - Completed an inventory touch smoke test across the available categories, item selection and detail views. The Gold Goblet description exposed a shared menu-layout bug on both Android and the pre-fix Windows build: detail text used a full-canvas wrapping limit despite being drawn inside a 340-pixel panel. Descriptions and weapon/armor stat text now wrap to the actual panel width; the corrected Gold Goblet text was verified on the Pixel.
+- Verified both main-menu minigames on the Pixel without requiring campaign unlocks. War rendered and accepted betting and card-selection touches reliably, with its expected sound effects; its code does not start background music. Chicken Kicking completed successfully with correct layout, touch interaction, animation, scoring, sound effects and return navigation.
+- Simplified the validated-IPA launcher to the two user-facing actions now needed: `Run game` and `Replace imported IPA`. The graphics and audio harness activities remain available in the source for diagnostics but no longer appear in the normal startup interface; the revised screen was verified on the Pixel.
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
 - Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
@@ -74,7 +76,7 @@ The developer is experienced in software development, is learning C, and is new 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- Complicated minigame touch interactions have not yet been verified on Android; broader combat and inventory coverage remain for later playtesting.
+- Broader combat and later-game interaction coverage remain for normal playtesting.
 - A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
 - External audio-focus interruptions and output-route changes have not yet been tested. Repeated lifecycle stress, graphics-context loss and interruption during an active save also remain unfinished.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
@@ -118,9 +120,9 @@ Original source-review baseline: local `davidcpell/WolfensteinRPG-RE` commit `22
 ### Requires experiments
 
 - Whether remaining combined rendering states match the desktop during longer levels and effects-heavy scenes.
-- Additional ARM runtime issues during longer play, combat and minigames.
+- Additional ARM runtime issues during longer play and later combat encounters.
 - Cyclone 2 wired detection and basic button/axis reporting on the Pixel.
-- Complete touch coverage of gameplay and minigames; optional controller mappings can be evaluated afterward where they are useful.
+- Complete touch coverage of the remaining gameplay interactions; optional controller mappings can be evaluated afterward where they are useful.
 - Audio interruptions, output changes, background/resume and graphics-resource recovery.
 
 ## Proposed architecture
@@ -275,7 +277,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 6. Establish complete touch input
 
-- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, basic forward movement, inventory interaction and the first successful combat encounter on the Pixel. An SDL event-state fix also makes the main-menu Options and in-game Save/Load transitions respond reliably to one tap. Minigames, broader combat and complete-campaign coverage remain.
+- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, basic forward movement, inventory interaction, the first successful combat encounter and both main-menu minigames on the Pixel. An SDL event-state fix also makes the main-menu Options and in-game Save/Load transitions respond reliably to one tap. Broader combat and complete-campaign coverage remain.
 - **Objective:** Make the game playable using the phone's touchscreen.
 - **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames` and other touch-oriented minigames.
 - **Expected changes:** Connect SDL finger events to the existing touch handlers; preserve the 480 by 320 logical coordinate system; correct scaling, gestures, hit detection and Android system-edge behavior where testing exposes problems.
