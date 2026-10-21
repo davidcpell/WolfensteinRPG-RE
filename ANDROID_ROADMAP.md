@@ -23,7 +23,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Use an Android emulator for routine development, with physical-phone checks at specific milestones.
 - Keep game logic unchanged where possible, reuse SDL2, and avoid a speculative renderer rewrite.
 
-## Current state as of 2026-10-19
+## Current state as of 2026-10-21
 
 ### Completed and verified
 
@@ -65,6 +65,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Completed an inventory touch smoke test across the available categories, item selection and detail views. The Gold Goblet description exposed a shared menu-layout bug on both Android and the pre-fix Windows build: detail text used a full-canvas wrapping limit despite being drawn inside a 340-pixel panel. Descriptions and weapon/armor stat text now wrap to the actual panel width; the corrected Gold Goblet text was verified on the Pixel.
 - Verified both main-menu minigames on the Pixel without requiring campaign unlocks. War rendered and accepted betting and card-selection touches reliably, with its expected sound effects; its code does not start background music. Chicken Kicking completed successfully with correct layout, touch interaction, animation, scoring, sound effects and return navigation.
 - Simplified the validated-IPA launcher to the two user-facing actions now needed: `Run game` and `Replace imported IPA`. The graphics and audio harness activities remain available in the source for diagnostics but no longer appear in the normal startup interface; the revised screen was verified on the Pixel.
+- Installed the same debug APK on a Lenovo TB330FU tablet running Android 15 (`arm64-v8a`, 1200 by 1920 display). Its independently imported IPA reached the first level, and combat, item pickups, save and load all worked. This establishes basic compatibility beyond the Android 17 Pixel and its graphics/display configuration.
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
 - Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
