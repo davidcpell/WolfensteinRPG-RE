@@ -66,6 +66,7 @@ The developer is experienced in software development, is learning C, and is new 
 - Verified both main-menu minigames on the Pixel without requiring campaign unlocks. War rendered and accepted betting and card-selection touches reliably, with its expected sound effects; its code does not start background music. Chicken Kicking completed successfully with correct layout, touch interaction, animation, scoring, sound effects and return navigation.
 - Simplified the validated-IPA launcher to the two user-facing actions now needed: `Run game` and `Replace imported IPA`. The graphics and audio harness activities remain available in the source for diagnostics but no longer appear in the normal startup interface; the revised screen was verified on the Pixel.
 - Installed the same debug APK on a Lenovo TB330FU tablet running Android 15 (`arm64-v8a`, 1200 by 1920 display). Its independently imported IPA reached the first level, and combat, item pickups, save and load all worked. This establishes basic compatibility beyond the Android 17 Pixel and its graphics/display configuration.
+- Fixed intermittent gameplay taps on the Lenovo tablet. SDL exposed Android's accelerometer as a virtual joystick, and an axis-release event could clear a valid touch action queued earlier in the same frame. The Android startup path now disables only that virtual accelerometer joystick; real USB and Bluetooth controllers remain available. The rest of level 1 completed without another missed tap across combat, doors, pickups and environmental interactions. After removing an unrelated experimental tap-tolerance change, the focused fix also completed 15 minutes of level 2 play without recurrence.
 - Verified private persistence across an APK update and process restart. The main menu offered `Continue`, and the saved Tower game restored into its level intro and playable scene.
 - Verified the real engine's basic Android lifecycle on the Pixel. Home/reopen and lock/unlock returned to a correctly rendered scene with working touch movement. After a force-stop, relaunching through `Continue` restored the Tower level; all five configuration/player/world save files retained their exact sizes and SHA-256 contents across the restart.
 - Fixed an ARM signed-`char` portability crash in queued help dialogs. The `-1` no-script sentinel had become 255 on Android and indexed beyond the script-thread array. The queue now uses an explicit signed 8-bit index; the pistol and journal dialogs close successfully on the Pixel with no recurrence of the native crash.
@@ -77,7 +78,7 @@ The developer is experienced in software development, is learning C, and is new 
 ### Deferred or not started
 
 - The GameSir Cyclone 2 has not been tested over USB-C.
-- Broader combat and later-game interaction coverage remain for normal playtesting.
+- Later-level combat and interaction coverage remain for normal playtesting.
 - A basic saved game survives an APK update and reloads through `Continue`, but save integrity during interruption and longer save/load testing remain unfinished.
 - External audio-focus interruptions and output-route changes have not yet been tested. Repeated lifecycle stress, graphics-context loss and interruption during an active save also remain unfinished.
 - The APK contains the importer, diagnostic harness and engine, but does not contain proprietary game resources.
@@ -278,7 +279,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 6. Establish complete touch input
 
-- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, basic forward movement, inventory interaction, the first successful combat encounter and both main-menu minigames on the Pixel. An SDL event-state fix also makes the main-menu Options and in-game Save/Load transitions respond reliably to one tap. Broader combat and complete-campaign coverage remain.
+- **Status:** Partial. Touch drives the intro, menus, dialogue, paged help, movement, inventory interaction, combat and both main-menu minigames. An SDL event-state fix makes the main-menu Options and in-game Save/Load transitions respond reliably to one tap. The Android accelerometer/virtual-joystick lost-tap defect is considered fixed after the remainder of level 1 and 15 minutes of level 2 completed on the Lenovo tablet without recurrence, including a final build with the unrelated tap-tolerance experiment removed. Later levels and the complete campaign remain unverified.
 - **Objective:** Make the game playable using the phone's touchscreen.
 - **Files/subsystems:** `Input`, `CAppContainer`, `Canvas`, `MenuSystem`, `Button`, `CardGames` and other touch-oriented minigames.
 - **Expected changes:** Connect SDL finger events to the existing touch handlers; preserve the 480 by 320 logical coordinate system; correct scaling, gestures, hit detection and Android system-edge behavior where testing exposes problems.
@@ -380,7 +381,7 @@ Phone-native polish adds more comfortable hit targets, screen-cutout and gesture
 
 **Continue a bounded normal-play touch test.**
 
-Continue from the existing save through the next combat section, using touch for movement, combat, pickups, dialogs and any newly encountered interface. Stop at the first reproducible functional or rendering failure so it can be isolated before more code changes.
+Continue normal play through the remainder of level 2, using touch for movement, combat, pickups, dialogs and any newly encountered interface. Stop at the first reproducible functional or rendering failure so it can be isolated before more code changes.
 
 The success gate is completing that section and saving afterward without repeated taps, unreachable controls, incorrect text layout or a native crash. A newly encountered minigame becomes its own focused checkpoint rather than being folded into general playtesting.
 

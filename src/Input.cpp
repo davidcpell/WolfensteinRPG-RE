@@ -716,8 +716,6 @@ void Input::handleEvents() noexcept {
     SDLGL* sdlGL = CAppContainer::getInstance()->sdlGL;
     Canvas* canvas = CAppContainer::getInstance()->app->canvas;
 
-    Uint8 state;
-    int mX, mY;           /* mouse location*/
     int i, j;
 
     while (SDL_PollEvent(&sdlEvent) != 0) {
@@ -797,10 +795,9 @@ void Input::handleEvents() noexcept {
             
 
             case SDL_MOUSEBUTTONDOWN: {
-                state = SDL_GetMouseState(&mX, &mY);
-                if (state & SDL_BUTTON_LMASK) {
+                if (sdlEvent.button.button == SDL_BUTTON_LEFT) {
                     sdlGL->windowToGameCoordinates(
-                        mX, mY, &gBegMouseX, &gBegMouseY);
+                        sdlEvent.button.x, sdlEvent.button.y, &gBegMouseX, &gBegMouseY);
                     gCurMouseX = gBegMouseX;
                     gCurMouseY = gBegMouseY;
                     CAppContainer::getInstance()->userPressed(gBegMouseX, gBegMouseY);
@@ -808,18 +805,18 @@ void Input::handleEvents() noexcept {
             }   break;
 
             case SDL_MOUSEBUTTONUP: {
-                SDL_GetMouseState(&mX, &mY);
-                sdlGL->windowToGameCoordinates(
-                    mX, mY, &gCurMouseX, &gCurMouseY);
-                CAppContainer::getInstance()->userReleased(gCurMouseX, gCurMouseY);
-                CAppContainer::getInstance()->unHighlightButtons();
-                CAppContainer::getInstance()->TestCheatEntry(gCurMouseX, gCurMouseY);
+                if (sdlEvent.button.button == SDL_BUTTON_LEFT) {
+                    sdlGL->windowToGameCoordinates(
+                        sdlEvent.button.x, sdlEvent.button.y, &gCurMouseX, &gCurMouseY);
+                    CAppContainer::getInstance()->userReleased(gCurMouseX, gCurMouseY);
+                    CAppContainer::getInstance()->unHighlightButtons();
+                    CAppContainer::getInstance()->TestCheatEntry(gCurMouseX, gCurMouseY);
+                }
             }   break;
 
             case SDL_MOUSEMOTION: {
-                SDL_GetMouseState(&mX, &mY);
                 sdlGL->windowToGameCoordinates(
-                    mX, mY, &gCurMouseX, &gCurMouseY);
+                    sdlEvent.motion.x, sdlEvent.motion.y, &gCurMouseX, &gCurMouseY);
                 if (sdlEvent.motion.state & SDL_BUTTON_LMASK) {
                     CAppContainer::getInstance()->userMoved(gCurMouseX, gCurMouseY);
                 }
