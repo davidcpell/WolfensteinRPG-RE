@@ -120,39 +120,78 @@ From the repository root, run:
 .\build\src\Release\WolfensteinRPG.exe
 ```
 
-#### Windows files and portable mode
+#### Windows first launch and game data
 
-Place your legally obtained original `Wolfenstein RPG.ipa` beside
-`WolfensteinRPG.exe` (for a local Release build, in `build\src\Release\`).
-The IPA is read in place. Do not commit or redistribute the IPA or extracted resources.
-There is no IPA picker in this version.
+Extract the Windows build into a folder and double-click `WolfensteinRPG.exe`.
+You need your legally obtained **original Wolfenstein RPG iOS IPA**. No developer
+tools, command-line arguments, or separate launcher are required to play.
 
-Windows resolves the executable directory with `GetModuleFileNameW`, independently
-of the working directory. Explorer, shortcuts, PowerShell, and Quiver Launcher use
-the same paths:
+If a valid `Wolfenstein RPG.ipa` is beside the executable, the game uses it
+automatically. Otherwise Windows opens a native file picker. Select your IPA
+wherever it is stored; you do not need to rename it. The picker offers both IPA
+and **All files** filters for unusual filenames. Invalid or unsupported archives
+show an explanation and return to the picker. **Cancel** exits normally.
 
-| Mode | Saves and configuration |
-| --- | --- |
-| Standard (no marker) | `%LOCALAPPDATA%\PellPorts\WolfensteinRPG\` |
-| Portable (marker present) | `<executable-directory>\WolfensteinRPG.app\` |
+Do not commit, package, upload, or redistribute the IPA, imported copies, or
+extracted resources. They are local user data and are not included with this port.
 
-Standard mode uses Windows' `FOLDERID_LocalAppData` known-folder API, rather than
-assuming an environment variable exists. Replacing or moving the executable does
-not change this user-specific save location.
+| Mode | Saves and configuration | IPA discovery order |
+| --- | --- | --- |
+| Standard (no marker) | `%LOCALAPPDATA%\PellPorts\WolfensteinRPG\` | Executable-adjacent IPA, remembered external IPA, picker |
+| Portable (marker present) | `<executable-directory>\WolfensteinRPG.app\` | Executable-adjacent IPA, picker with local import |
 
-To enable portable mode, create an **empty file named exactly `portable.txt`**
-beside the executable. Check that Explorer has not named it `portable.txt.txt`.
-Quiver Launcher may create this same marker; no launcher is required. Marker
-contents are ignored. Move the entire installation, including the marker and
-`WolfensteinRPG.app`, to keep portable saves with the game. The installation must
-be writable; remove the marker to select standard storage, after deciding how to
-preserve any portable saves.
+Windows resolves the executable directory independently of the working directory
+with `GetModuleFileNameW`. Standard storage uses the Windows
+`FOLDERID_LocalAppData` known-folder API. Explorer, shortcuts, PowerShell, and
+launchers therefore select the same paths.
 
-The selected directory is created and checked for write access before the engine
-starts. Invalid paths, inaccessible storage, and missing IPAs produce an error
-dialog and a nonzero startup exit code. File-open errors include the attempted
-path; late save write/close failures use the existing engine error dialog.
-There is no automatic fallback to another save directory.
+**Standard mode:** a selected external IPA is read directly in place. Its absolute
+UTF-8 path is remembered in `startup\ipa-path.txt` inside the standard data
+directory, separate from game saves and configuration. Subsequent launches reuse
+it after validation. If it is moved, deleted, unreadable, or invalid, the picker
+opens again. A valid executable-adjacent IPA always takes precedence. Moving or
+replacing the executable does not move this user's saves.
+
+**Portable mode:** create an empty file named exactly `portable.txt` beside the
+executable (not `portable.txt.txt`). Quiver Launcher can create the same marker,
+but no launcher is needed. If there is no valid adjacent IPA, choose your original
+IPA and accept the offer to **import a copy** as `Wolfenstein RPG.ipa` beside the
+executable. The dialog explains that copying lets the whole installation move to
+another computer. Your original is preserved. **No** returns to file selection;
+Cancel exits. If an IPA already exists, a separate replacement confirmation is
+required, with No selected by default.
+
+Portable mode never remembers an external absolute path. Move the complete folder
+with the executable, required DLLs, `portable.txt`, `Wolfenstein RPG.ipa`, and
+`WolfensteinRPG.app`. The installation must be writable. An unwritable destination
+produces an actionable error; it does not silently switch to AppData.
+
+**Replacing an IPA:** close the game first. In standard mode, either replace your
+external file in place, or rename/remove only `startup\ipa-path.txt` to select
+another file on next launch. If an adjacent IPA exists, rename it first to stop it
+taking precedence. In portable mode, back up and rename the adjacent IPA before
+launching to select/import another one. Saves do not need to be removed.
+
+Imports use a unique same-directory staging file, flush it, validate the completed
+copy, then publish it with a Windows rename. A failed copy or replacement preserves
+the existing IPA and cleans up its own staging file. Normal exceptions also clean
+up metadata staging files. A forced process termination or power loss can leave a
+`.wolf-startup-*.tmp` file; it is never accepted as an adjacent IPA. With the game
+closed, leftover files matching that name can be removed manually. Network shares
+and filesystem/hardware failure may offer weaker crash guarantees than local NTFS.
+
+Validation checks the Android baseline entry list, including `Info.plist` and
+essential files under `Payload/Wolf...RPG.app/Packages/`. It checks ZIP bounds,
+compression support, resource sizes, and streamed decompression/CRC for all package
+files without extracting them. It checks archive integrity and expected layout,
+not every proprietary resource's internal semantics. Encrypted, split, ZIP64, and
+archives at or above 2 GiB are unsupported; individual resources are limited to
+128 MiB and total validated resources to 1 GiB to bound validation work.
+
+There is no automatic fallback to a different save directory. File-open and
+startup errors identify the path or operation; recoverable selection, persistence,
+and import failures let you select again. Late save write failures retain the
+existing engine error dialog.
 
 #### Existing Windows saves: explicit choice required
 
@@ -183,6 +222,9 @@ Removing a marker or changing modes does not migrate saves. The save format is
 unchanged; ordinary gameplay still updates files in the explicitly selected
 directory. Keep backups until you have verified your progress in the game.
 
+When switching from standard to portable mode, select/import the IPA separately;
+the standard-mode remembered path is intentionally ignored in portable mode.
+
 Filesystem paths cross the engine boundary as UTF-8 and use Windows UTF-16 APIs
 for executable/known-folder lookup, directory operations, IPA/save opens and
 save deletion. Tests cover accented and Japanese directory names. Arbitrary
@@ -198,17 +240,44 @@ cmake --build build --config Release --parallel 4
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-Tests use newly created temporary directories and disposable data only. They
-exercise the real local-file stream implementation, exact save bytes, Unicode
-paths, legacy refusal, missing files, invalid destinations, read-only files,
-directory ACL denial, and copied/relocated test executables launched from an
-unrelated directory. They contain no IPA or extracted resources.
+Tests use newly created temporary directories, generated ZIP archives, and
+disposable text only. They exercise real local-file streams, exact save bytes,
+Unicode paths, legacy refusal, invalid/read-only destinations, directory ACL
+denial, and copied/relocated executables. Startup tests cover archive integrity,
+the engine ZIP handoff, IPA precedence, retry/cancel, UTF-8 persistence, missing
+selections, portable import consent, failed replacement, and temporary-file
+cleanup. They contain no original IPA or extracted resources.
+
+Live validation on Windows with the MSVC Release build (2026-10-23):
+
+| Check | Observed result |
+| --- | --- |
+| Clean standard launch | Native picker appeared before the game window |
+| Invalid selection | Clear validation warning, then picker reopened in the same process |
+| Valid external IPA with Unicode name and unusual extension | Game launched; original read in place |
+| Standard restart | Remembered path reused without a picker |
+| Remembered file moved | Picker reopened; cancellation returned exit code 0 |
+| Portable selection | Copy explanation and consent dialog appeared; import hash matched source |
+| Portable relocation to Unicode directories | Automatic local IPA discovery, with external selected path unavailable |
+| Configuration after relocation/restart | SFX volume 48 loaded from the relocated portable configuration |
+| Unrelated working directory | Missing remembered IPA still prompted; relocated portable game launched |
+| Existing development saves | All six pre-existing file hashes remained unchanged |
+
+The live installations and imported IPA were outside Git and were removed after
+testing. The standard data directory was absent before the test and contained
+only newly created test metadata. Existing development data was not used for
+writes. Synthetic tests cover overwrite refusal, failed replacement and permission
+errors; the live session did not simulate disk exhaustion, power failure, or a
+full game playthrough. An unrelated device-update overlay was left untouched;
+the game window was moved out of its way with computer control.
 
 The Android branch can continue to assign the runtime `dir` at startup. When
 merging, retain a single definition (now in `FileSystem.cpp`), compile that file
 with C++17, and reconcile the platform startup blocks in `Main.cpp`. Windows
 path selection must remain under `_WIN32`; Android's supplied IPA/save paths
-remain authoritative there.
+remain authoritative there. `WindowsStartup.cpp` is Windows-only and
+`IpaArchive.cpp` uses the existing zlib dependency; the Windows UI uses only
+system COM/Shell APIs, with no .NET or additional GUI framework.
 
 ### 🎮 **Default key configuration:**
 

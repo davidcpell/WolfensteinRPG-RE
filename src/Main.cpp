@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include "FileSystem.h"
+#include "WindowsStartup.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -34,6 +35,8 @@ int main(int argc, char* args[]) try {
     FileSystem::prepareDirectory(paths.storage);
     const std::string storageDirectory = paths.storage.u8string();
     dir = storageDirectory.c_str();
+    const auto ipa = WindowsStartup::selectIpa(paths);
+    if (!ipa) return 0; // Cancelling startup is a normal exit.
 #endif
     int		UpTime = 0;
 
@@ -43,7 +46,7 @@ int main(int argc, char* args[]) try {
     
     ZipFile zipFile;
 #ifdef _WIN32
-    zipFile.openZipFile(paths.ipa.u8string().c_str());
+    zipFile.openZipFile(ipa->u8string().c_str());
 #else
     zipFile.openZipFile("Wolfenstein RPG.ipa");
 #endif

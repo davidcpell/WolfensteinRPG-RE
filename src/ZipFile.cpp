@@ -5,6 +5,7 @@
 
 #include "ZipFile.h"
 #include "FileSystem.h"
+#include <vector>
 #include "SDLGL.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -151,36 +152,26 @@ void ZipFile::findAndReadZipDir(int startoffset) {
 
 void ZipFile::openZipFile(const char* name) {
 
-	uint8_t buf[512];
-	int filesize, back, maxback;
-	int i, n;
-
-	this->file = FileSystem::open(name, "rb");
-	if (!this->file) throw std::runtime_error(std::string("Cannot find IPA: ") + name + ". Supply your original IPA at this path.");
-
-	fseek(this->file, 0, SEEK_END);
-	filesize = (int)ftell(this->file);
-	fseek(this->file, 0, SEEK_SET);
-
-	maxback = MIN(filesize, 0xFFFF + sizeof(buf));
-	back = MIN(maxback, sizeof(buf));
-
-	while (back < maxback)
-	{
-		fseek(this->file, filesize - back, SEEK_SET);
-		n = sizeof(buf);
-		fread(buf, sizeof(uint8_t), n, this->file);
-		for (i = n - 4; i > 0; i--)
-		{
-			if (!memcmp(buf + i, "PK\5\6", 4)) {
-				findAndReadZipDir(filesize - back + i);
-				return;
-			}
-		}
-		back += sizeof(buf) - 4;
-	}
-
-	Error("cannot find end of central directory\n");
+    this->file = FileSystem::open(name, "rb");
+    if (!this->file) throw std::runtime_error(std::string("Cannot open IPA: ") + name);
+    if (fseek(this->file, 0, SEEK_END) != 0) throw std::runtime_error("Cannot seek IPA.");
+    const long filesize = ftell(this->file);
+    if (filesize < 22) throw std::runtime_error("Truncated IPA/ZIP archive.");
+    const size_t size = static_cast<size_t>(MIN(filesize, 65557L));
+    std::vector<uint8_t> tail(size);
+    fseek(this->file, filesize - static_cast<long>(size), SEEK_SET);
+    if (fread(tail.data(), 1, size, this->file) != size) throw std::runtime_error("Cannot read IPA.");
+    // Match the real end record, including its comment length. The previous
+    // 512-byte scan missed small ZIPs and could mistake comment bytes for an end record.
+    for (size_t offset = size - 22;; --offset) {
+        const size_t comment = tail[offset + 20] | (size_t(tail[offset + 21]) << 8);
+        if (!memcmp(tail.data() + offset, "PK\5\6", 4) && offset + 22 + comment == size) {
+            findAndReadZipDir(static_cast<int>(filesize - size + offset));
+            return;
+        }
+        if (offset == 0) break;
+    }
+    throw std::runtime_error("Cannot find IPA/ZIP directory.");
 }
 
 void ZipFile::closeZipFile() {
