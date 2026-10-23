@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.10)
+project(ConfigFileTests LANGUAGES CXX)
+enable_testing()
+add_executable(config_file_tests ConfigFileTests.cpp)
+target_compile_features(config_file_tests PRIVATE cxx_std_11)
+add_test(NAME config_file_durability COMMAND config_file_tests)

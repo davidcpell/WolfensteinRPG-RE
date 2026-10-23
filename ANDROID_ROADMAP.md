@@ -23,9 +23,11 @@ The developer is experienced in software development, is learning C, and is new 
 - Use an Android emulator for routine development, with physical-phone checks at specific milestones.
 - Keep game logic unchanged where possible, reuse SDL2, and avoid a speculative renderer rewrite.
 
-## Current state as of 2026-10-21
+## Current state as of 2026-10-23
 
 ### Completed and verified
+
+- Hardened configuration persistence: version-29 settings are serialized in memory, written to a same-directory temporary file, flushed and synced, then atomically replace the previous configuration. Loading validates the exact size, version and trailing marker before applying settings, retaining startup defaults for incomplete or unsupported files. Windows regression tests cover every truncated prefix, invalid headers/markers, replacement failure, abandoned temporary files and 20 process terminations during writes. Windows Debug and Android ARM64/x86-64 APK builds pass; this change has not yet had a new on-device interruption test. Campaign save writes are unchanged.
 
 - Installed and verified Android Studio Rabbit 1, Android SDK/API 37, Build Tools 36.0.0, NDK 30.0.16248370, CMake 4.1.2 and the Android emulator.
 - Created and booted the x86-64 `Medium_Phone_API_37.0` Android 17 virtual device.
@@ -85,7 +87,7 @@ The developer is experienced in software development, is learning C, and is new 
 
 ### Next recommended checkpoint
 
-Continue normal play through a broader combat section and record the next newly encountered interaction or rendering failure. Retain the interrupted `CONFIGFILENAME` write as a durability research note for later hardening; it is a reproduced edge case, but it does not block the next functional checkpoint.
+Continue normal play through a broader combat section and record the next newly encountered interaction or rendering failure. Configuration writes now use atomic replacement and reject incomplete files before loading; verify this on-device during the next interruption checkpoint. Campaign-save durability remains separate work.
 
 An IPA is an iPhone/iPad application archive, roughly equivalent to an Android APK. This port reads graphics, maps, sounds and other resources from the user's IPA; it runs the rebuilt C++ engine rather than the executable inside that archive.
 
@@ -311,7 +313,7 @@ Each milestone may contain several small learning chunks. Stop at each agreed ch
 
 ### 9. Harden lifecycle and persistence
 
-- **Status:** Partial. Home/reopen, lock/unlock and force-stop/restart pass with the real engine on the Pixel, and the saved-game checksums remain stable. Configuration writes are still direct and have produced a partial file when interrupted by an APK installation.
+- **Status:** Partial. Home/reopen, lock/unlock and force-stop/restart pass with the real engine on the Pixel, and the saved-game checksums remain stable. The partial configuration file reproduced during APK installation is now addressed with atomic configuration replacement and validation before loading. Host interruption tests pass; on-device interruption validation and campaign-save durability remain.
 - **Objective:** Survive ordinary phone use. Start basic handling earlier; this milestone validates it systematically.
 - **Files/subsystems:** Main loop, SDL events, rendering resources, audio, input, saves and streams.
 - **Expected changes:** Pause safely, reset timing/input, recover graphics resources, persist atomically and repair affected cleanup ownership.

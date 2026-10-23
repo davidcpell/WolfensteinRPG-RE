@@ -18,6 +18,7 @@
 #include "MayaCamera.h"
 #include "LerpSprite.h"
 #include "JavaStream.h"
+#include "ConfigFile.h"
 #include "MenuSystem.h"
 #include "ParticleSystem.h"
 #include "Enums.h"
@@ -2051,73 +2052,61 @@ bool Game::loadWorldState(InputStream* IS) {
 void Game::saveConfig() {
 	Applet* app = CAppContainer::getInstance()->app;
 	SDLGL* sdlGL = CAppContainer::getInstance()->sdlGL;
-	OutputStream OS;
-	int defaultLanguage;
+	ConfigFileOutput OS;
 	const char* name = this->GetSaveFile(Game::FILE_NAME_CONFIG, 0);
 	
-	if (OS.openFile(name, 1)) {
-		OS.writeInt(29);
-		OS.writeByte(this->difficulty);
-		OS.writeBoolean(app->sound->allowSounds);
-		OS.writeBoolean(app->sound->allowMusics);
-		OS.writeByte((uint8_t)app->sound->soundFxVolume);
-		OS.writeByte((uint8_t)app->sound->musicVolume);
-		OS.writeBoolean(app->canvas->vibrateEnabled);
-		OS.writeBoolean(app->player->enableHelp);
-		OS.writeInt(app->localization->defaultLanguage);
-		/*
-		defaultLanguage = app->localization->defaultLanguage;
-		if (defaultLanguage == this->getLanguage())
-			OutputStream::writeInt(v4, 4);
-		else
-			OutputStream::writeInt(v4, app->localization->defaultLanguage);
-			*/
+	OS.writeInt(29);
+	OS.writeByte(this->difficulty);
+	OS.writeBoolean(app->sound->allowSounds);
+	OS.writeBoolean(app->sound->allowMusics);
+	OS.writeByte((uint8_t)app->sound->soundFxVolume);
+	OS.writeByte((uint8_t)app->sound->musicVolume);
+	OS.writeBoolean(app->canvas->vibrateEnabled);
+	OS.writeBoolean(app->player->enableHelp);
+	OS.writeInt(app->localization->defaultLanguage);
 
-		OS.writeInt(app->player->totalDeaths);
-		OS.writeInt(app->canvas->animFrames);
-		OS.writeInt(app->canvas->m_controlLayout);
-		OS.writeInt(app->canvas->m_controlAlpha);
-		OS.writeBoolean(app->canvas->m_controlFlip);
-		OS.writeInt(app->player->helpBitmask);
-		OS.writeInt(app->player->invHelpBitmask);
-		OS.writeInt(app->player->ammoHelpBitmask);
-		OS.writeInt(app->player->weaponHelpBitmask);
-		OS.writeInt(app->player->armorHelpBitmask);
-		for (int i = 0; i < MenuSystem::MAX_SAVED_INDEXES; ++i) {
-			OS.writeInt(app->menuSystem->indexes[i * 2 + 0]);
-			OS.writeInt(app->menuSystem->indexes[i * 2 + 1]);
-		}
-		OS.writeBoolean(app->canvas->recentBriefSave);
-		OS.writeBoolean(this->hasSeenIntro);
-
-		for (int i2 = 0; i2 < 5; i2++) {
-			OS.writeShort(app->canvas->highScores[i2]);
-		}
-		for (int i3 = 0; i3 < 15; i3++) {
-			OS.writeByte(app->canvas->highScoreInitials[i3]);
-		}
-
-		// [GEC] Port Configurations
-		OS.writeInt(sdlGL->windowMode);
-		OS.writeBoolean(sdlGL->vSync);
-		OS.writeInt(sdlGL->resolutionIndex);
-		OS.writeInt(gVibrationIntensity);
-		OS.writeInt(gDeadZone);
-		OS.writeBoolean(_glesObj->isInit);
-
-		for (int i = 0; i < KEY_MAPPIN_MAX; i++) {
-			for (int j = 0; j < KEYBINDS_MAX; j++) {
-				OS.writeInt(keyMapping[i].keyBinds[j]);
-			}
-		}
-
-		OS.writeInt(0xDEADBEEF);
-		OS.close();
+	OS.writeInt(app->player->totalDeaths);
+	OS.writeInt(app->canvas->animFrames);
+	OS.writeInt(app->canvas->m_controlLayout);
+	OS.writeInt(app->canvas->m_controlAlpha);
+	OS.writeBoolean(app->canvas->m_controlFlip);
+	OS.writeInt(app->player->helpBitmask);
+	OS.writeInt(app->player->invHelpBitmask);
+	OS.writeInt(app->player->ammoHelpBitmask);
+	OS.writeInt(app->player->weaponHelpBitmask);
+	OS.writeInt(app->player->armorHelpBitmask);
+	for (int i = 0; i < MenuSystem::MAX_SAVED_INDEXES; ++i) {
+		OS.writeInt(app->menuSystem->indexes[i * 2 + 0]);
+		OS.writeInt(app->menuSystem->indexes[i * 2 + 1]);
 	}
-	else {
+	OS.writeBoolean(app->canvas->recentBriefSave);
+	OS.writeBoolean(this->hasSeenIntro);
+
+	for (int i2 = 0; i2 < 5; i2++) {
+		OS.writeShort(app->canvas->highScores[i2]);
+	}
+	for (int i3 = 0; i3 < 15; i3++) {
+		OS.writeByte(app->canvas->highScoreInitials[i3]);
+	}
+
+	// [GEC] Port Configurations
+	OS.writeInt(sdlGL->windowMode);
+	OS.writeBoolean(sdlGL->vSync);
+	OS.writeInt(sdlGL->resolutionIndex);
+	OS.writeInt(gVibrationIntensity);
+	OS.writeInt(gDeadZone);
+	OS.writeBoolean(_glesObj->isInit);
+
+	for (int i = 0; i < KEY_MAPPIN_MAX; i++) {
+		for (int j = 0; j < KEYBINDS_MAX; j++) {
+			OS.writeInt(keyMapping[i].keyBinds[j]);
+		}
+	}
+
+	OS.writeInt(0xDEADBEEF);
+	if (!OS.save(dir, name)) {
 		app->Error("I/O Error in saveConfig"); // ERR_SAVECONFIG
 	}
-	OS.~OutputStream();
 }
 
 void Game::loadConfig() {
@@ -2127,6 +2116,11 @@ void Game::loadConfig() {
 	const char* name = this->GetSaveFile(Game::FILE_NAME_CONFIG, 0);
 
 	if (IS.loadFile(name, LT_FILE)) {
+		if (!isCompleteConfig(IS.data, IS.fileSize,
+			MenuSystem::MAX_SAVED_INDEXES, KEY_MAPPIN_MAX, KEYBINDS_MAX)) {
+			printf("Ignoring incomplete or unsupported configuration; retaining defaults\n");
+			return;
+		}
 		if (IS.readInt() == 29) {
 			this->difficulty = IS.readByte();
 			app->sound->allowSounds = IS.readBoolean();
@@ -2200,7 +2194,6 @@ void Game::loadConfig() {
 			IS.close();
 		}
 	}
-	IS.~InputStream();
 }
 
 void Game::saveState(int lastMapID, int loadMapID, int viewX, int viewY, int viewAngle, int viewPitch, int prevX, int prevY, int saveX, int saveY, int saveZ, int saveAngle, int savePitch, int saveType) {

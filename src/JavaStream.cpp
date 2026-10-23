@@ -76,9 +76,9 @@ bool InputStream::loadFile(const char* fileName, int loadType) {
 			this->fileSize = ftell(this->file);
 			fseek(this->file, 0, SEEK_SET);
 			this->data = (uint8_t*)malloc(this->fileSize);
-			fread(this->data, sizeof(uint8_t), this->fileSize, this->file);
+			const size_t bytesRead = fread(this->data, sizeof(uint8_t), this->fileSize, this->file);
 
-			if (ferror(this->file)) {
+			if (ferror(this->file) || bytesRead != static_cast<size_t>(this->fileSize)) {
 				CAppContainer::getInstance()->app->Error( "Error Reading File!\n");
 				return false;
 			}
