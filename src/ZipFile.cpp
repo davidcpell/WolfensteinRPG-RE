@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "ZipFile.h"
+#include "FileSystem.h"
 #include "SDLGL.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -154,10 +155,8 @@ void ZipFile::openZipFile(const char* name) {
 	int filesize, back, maxback;
 	int i, n;
 
-	this->file = fopen(name, "rb");
-	if (this->file == NULL) {
-		Error("openZipFile: cannot open file %s\n", name);
-	}
+	this->file = FileSystem::open(name, "rb");
+	if (!this->file) throw std::runtime_error(std::string("Cannot find IPA: ") + name + ". Supply your original IPA at this path.");
 
 	fseek(this->file, 0, SEEK_END);
 	filesize = (int)ftell(this->file);

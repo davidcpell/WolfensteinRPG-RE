@@ -1,6 +1,6 @@
 #include <stdexcept>
 #include <cstring>
-#include <sys/stat.h>
+#include <string>
 
 #include "JavaStream.h"
 #include "CAppContainer.h"
@@ -39,35 +39,31 @@ bool InputStream::loadResource(const char* fileName)
 }
 
 bool InputStream::loadFile(const char* fileName, int loadType) {
-	char namePath[2048];
+	std::string namePath;
 	this->cursor = 0;
 
 	if (loadType == LT_RESOURCE) {
-		strncpy(namePath, "Payload/Wolf...RPG.app/Packages/", sizeof(namePath));
-		strncat(namePath, fileName, sizeof(namePath));
+		namePath = std::string("Payload/Wolf...RPG.app/Packages/") + fileName;
 		//printf("namePath %s\n", namePath);
 
-		this->data = CAppContainer::getInstance()->zipFile->readZipFileEntry(namePath, &this->fileSize);
+		this->data = CAppContainer::getInstance()->zipFile->readZipFileEntry(namePath.c_str(), &this->fileSize);
 		if (this->data) {
 			return true;
 		}
 	}
 	else if (loadType == LT_SOUND_RESOURCE) { // [GEC]
-		strncpy(namePath, "Payload/Wolf...RPG.app/Packages/sounds/", sizeof(namePath));
-		strncat(namePath, fileName, sizeof(namePath));
+		namePath = std::string("Payload/Wolf...RPG.app/Packages/sounds/") + fileName;
 		//printf("namePath %s\n", namePath);
 
-		this->data = CAppContainer::getInstance()->zipFile->readZipFileEntry(namePath, &this->fileSize);
+		this->data = CAppContainer::getInstance()->zipFile->readZipFileEntry(namePath.c_str(), &this->fileSize);
 		if (this->data) {
 			return true;
 		}
 	}
 	else if (loadType == LT_FILE) {
-		strcpy(namePath, dir);
-		strcat(namePath, "/");
-		strcat(namePath, fileName);
+		namePath = FileSystem::savePath(fileName);
 
-		this->file = fopen(namePath, "rb");
+		this->file = FileSystem::open(namePath.c_str(), "rb");
 
 		if (this->file != nullptr) {
 			fseek(this->file, 0, SEEK_END);
@@ -197,22 +193,8 @@ OutputStream::~OutputStream() {
 }
 
 int OutputStream::openFile(const char* fileName, int openMode) {
-	char namePath[2060];
-
-	struct stat sb;
-	if (stat(dir, &sb)) {
-		char command[128];
-		strcpy(command, "mkdir ");
-		strcat(command, "\"");
-		strcat(command, dir);
-		strcat(command, "\"");
-		//printf("command %s\n", command);
-		system(command);
-	}
-
-	strcpy(namePath, dir);
-	strcat(namePath, "/");
-	strcat(namePath, fileName);
+	const std::string namePath = FileSystem::savePath(fileName);
+	FileSystem::prepareDirectory(std::filesystem::u8path(dir));
 
 	//printf("output file: %s\n", namePath);
 	this->buffer = (uint8_t*)malloc(512);
@@ -231,13 +213,13 @@ int OutputStream::openFile(const char* fileName, int openMode) {
 	switch (openMode)
 	{
 	case 1:
-		this->file = fopen(namePath, "wb");
+		this->file = FileSystem::open(namePath.c_str(), "wb");
 		break;
 	case 2:
-		this->file = fopen(namePath, "rb");
+		this->file = FileSystem::open(namePath.c_str(), "rb");
 		break;
 	case 3:
-		this->file = fopen(namePath, "w+b");
+		this->file = FileSystem::open(namePath.c_str(), "w+b");
 		break;
 	default:
 		return 0;
@@ -258,8 +240,9 @@ void OutputStream::close()
 {
 	this->flush();
 	if (this->file != nullptr) {
-		fclose(this->file);
+		const int result = fclose(this->file);
 		this->file = nullptr;
+		if (result != 0) this->App->Error("Cannot finish writing saves in %s. Check disk space.", dir);
 	}
 
 	if (this->buffer != nullptr) {
@@ -277,7 +260,9 @@ int OutputStream::flush()
 	this->flushCount += this->written;
 
 	if (!this->noWrite) {
-		if (fwrite(this->buffer, sizeof(uint8_t), this->written, this->file) <= 0) {
+		if (!this->file || fwrite(this->buffer, sizeof(uint8_t), this->written, this->file) != this->written) {
+			this->written = 0;
+			this->App->Error("Cannot write saves in %s. Check permissions and disk space.", dir);
 			return 0;
 		}
 	}

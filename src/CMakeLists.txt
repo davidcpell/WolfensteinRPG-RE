@@ -32,3 +32,9 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # Verifica si realmente necesitas una compilación estática
     target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
 endif()
+
+# UTF-8 engine paths, native UTF-16 Windows filesystem access.
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} shell32 ole32)
+endif()

@@ -2363,7 +2363,7 @@ bool Game::hasConfig() {
 bool Game::hasElement(const char* name){
 	if (name != nullptr) {
 		char* namePath = this->getProfileSaveFileName(name);
-		FILE* file = fopen(namePath, "rb");
+		FILE* file = FileSystem::open(namePath, "rb");
 		if (namePath) {delete[] namePath;}
 		if (file != nullptr) {
 			fclose(file);
@@ -2409,7 +2409,7 @@ void Game::removeState(bool b) {
 	}
 
 	namePath = this->getProfileSaveFileName(this->GetSaveFile(Game::FILE_NAME_FULLWORLD, 0));
-	remove(namePath);
+	FileSystem::remove(namePath);
 	if (namePath) { delete[] namePath; }
 
 	if (b) {
@@ -2417,7 +2417,7 @@ void Game::removeState(bool b) {
 	}
 
 	namePath = this->getProfileSaveFileName(this->GetSaveFile(Game::FILE_NAME_FULLPLAYER, 0));
-	remove(namePath);
+	FileSystem::remove(namePath);
 	if (namePath) { delete[] namePath; }
 
 	if (b) {
@@ -2425,7 +2425,7 @@ void Game::removeState(bool b) {
 	}
 
 	namePath = this->getProfileSaveFileName(this->GetSaveFile(Game::FILE_NAME_BRIEFPLAYER, 0));
-	remove(namePath);
+	FileSystem::remove(namePath);
 	if (namePath) { delete[] namePath; }
 
 	if (b) {
@@ -2433,7 +2433,7 @@ void Game::removeState(bool b) {
 	}
 	for (int i = 0; i < 10; i++) {
 		namePath = this->getProfileSaveFileName(this->GetSaveFile(Game::FILE_NAME_BRIEFWORLD, i));
-		remove(namePath);
+		FileSystem::remove(namePath);
 		if (namePath) { delete[] namePath; }
 		if (b) {
 			app->canvas->updateLoadingBar(false);
@@ -3797,12 +3797,9 @@ const char* Game::GetSaveFile(int i, int i2) {
 char* Game::getProfileSaveFileName(const char* name) {
 	if (name != nullptr)
 	{
-		int len1 = strlen(dir);
-		int len2 = strlen(name);
-		char* namePath = new char[len1 + len2 + 200];
-		strcpy(namePath, dir);
-		strcat(namePath, "/");
-		strcat(namePath, name);
+		const auto path = FileSystem::savePath(name);
+		char* namePath = new char[path.size() + 1];
+		memcpy(namePath, path.c_str(), path.size() + 1);
 		return namePath;
 	}
 	else

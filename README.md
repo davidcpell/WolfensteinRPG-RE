@@ -120,6 +120,96 @@ From the repository root, run:
 .\build\src\Release\WolfensteinRPG.exe
 ```
 
+#### Windows files and portable mode
+
+Place your legally obtained original `Wolfenstein RPG.ipa` beside
+`WolfensteinRPG.exe` (for a local Release build, in `build\src\Release\`).
+The IPA is read in place. Do not commit or redistribute the IPA or extracted resources.
+There is no IPA picker in this version.
+
+Windows resolves the executable directory with `GetModuleFileNameW`, independently
+of the working directory. Explorer, shortcuts, PowerShell, and Quiver Launcher use
+the same paths:
+
+| Mode | Saves and configuration |
+| --- | --- |
+| Standard (no marker) | `%LOCALAPPDATA%\PellPorts\WolfensteinRPG\` |
+| Portable (marker present) | `<executable-directory>\WolfensteinRPG.app\` |
+
+Standard mode uses Windows' `FOLDERID_LocalAppData` known-folder API, rather than
+assuming an environment variable exists. Replacing or moving the executable does
+not change this user-specific save location.
+
+To enable portable mode, create an **empty file named exactly `portable.txt`**
+beside the executable. Check that Explorer has not named it `portable.txt.txt`.
+Quiver Launcher may create this same marker; no launcher is required. Marker
+contents are ignored. Move the entire installation, including the marker and
+`WolfensteinRPG.app`, to keep portable saves with the game. The installation must
+be writable; remove the marker to select standard storage, after deciding how to
+preserve any portable saves.
+
+The selected directory is created and checked for write access before the engine
+starts. Invalid paths, inaccessible storage, and missing IPAs produce an error
+dialog and a nonzero startup exit code. File-open errors include the attempted
+path; late save write/close failures use the existing engine error dialog.
+There is no automatic fallback to another save directory.
+
+#### Existing Windows saves: explicit choice required
+
+Older builds used `WolfensteinRPG.app` under the **process working directory**.
+This might be the repository root, a shortcut's “Start in” directory, or a launcher
+working directory. This version cannot discover every old working directory.
+
+If a nonempty `WolfensteinRPG.app` exists **beside the executable** without
+`portable.txt`, startup stops with instructions, even if AppData already contains
+another set of saves. Detection never moves, deletes, copies, or overwrites saves.
+An empty legacy directory does not block startup.
+
+Close the game and back up the complete old save directory before choosing:
+
+* **Keep saves beside the executable:** add `portable.txt` beside it. This explicitly
+  selects that existing `WolfensteinRPG.app` directory. If your old saves are under
+  another working directory, manually copy the complete backed-up directory beside
+  the executable first; resolve any existing destination files yourself.
+* **Use standard storage:** open `%LOCALAPPDATA%` in Explorer and create
+  `PellPorts\WolfensteinRPG`. Manually copy the **contents** of your backed-up
+  save directory into it. If destination files already exist, back up both sets and
+  explicitly decide which set to retain; do not blindly overwrite or combine
+  progress. Rename the old directory beside the executable (for example,
+  `WolfensteinRPG.app.backup`) to acknowledge the choice, and leave the marker
+  absent.
+
+Removing a marker or changing modes does not migrate saves. The save format is
+unchanged; ordinary gameplay still updates files in the explicitly selected
+directory. Keep backups until you have verified your progress in the game.
+
+Filesystem paths cross the engine boundary as UTF-8 and use Windows UTF-16 APIs
+for executable/known-folder lookup, directory operations, IPA/save opens and
+save deletion. Tests cover accented and Japanese directory names. Arbitrary
+Windows long-path support is not guaranteed; normal Windows/CRT path limits
+still apply.
+
+#### Windows storage tests
+
+After configuring the Windows build above (CTest tests are enabled by default):
+
+```powershell
+cmake --build build --config Release --parallel 4
+ctest --test-dir build -C Release --output-on-failure
+```
+
+Tests use newly created temporary directories and disposable data only. They
+exercise the real local-file stream implementation, exact save bytes, Unicode
+paths, legacy refusal, missing files, invalid destinations, read-only files,
+directory ACL denial, and copied/relocated test executables launched from an
+unrelated directory. They contain no IPA or extracted resources.
+
+The Android branch can continue to assign the runtime `dir` at startup. When
+merging, retain a single definition (now in `FileSystem.cpp`), compile that file
+with C++17, and reconcile the platform startup blocks in `Main.cpp`. Windows
+path selection must remain under `_WIN32`; Android's supplied IPA/save paths
+remain authoritative there.
+
 ### 🎮 **Default key configuration:**
 
 Move Forward: W, Up<br />

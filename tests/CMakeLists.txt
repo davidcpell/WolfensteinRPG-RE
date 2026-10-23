@@ -1,0 +1,6 @@
+add_executable(StorageTests StorageTests.cpp ../src/FileSystem.cpp ../src/JavaStream.cpp)
+target_include_directories(StorageTests PRIVATE ../src)
+target_compile_features(StorageTests PRIVATE cxx_std_17)
+target_compile_options(StorageTests PRIVATE /utf-8)
+target_link_libraries(StorageTests PRIVATE ZLIB::ZLIB shell32 ole32 advapi32)
+add_test(NAME WindowsStorage COMMAND StorageTests)

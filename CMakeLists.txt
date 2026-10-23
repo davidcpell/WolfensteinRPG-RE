@@ -17,3 +17,7 @@ set(HASH_LIBRARY_TGT_NAME           Hash-Library)
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory("${PROJECT_SOURCE_DIR}/third_party_libs/hash-library")
+include(CTest)
+if(BUILD_TESTING AND WIN32)
+    add_subdirectory(tests)
+endif()

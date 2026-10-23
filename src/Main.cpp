@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include "FileSystem.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -24,7 +25,16 @@
 
 void drawView(SDLGL* sdlGL);
 
-int main(int argc, char* args[]) {
+int main(int argc, char* args[]) try {
+#ifdef _WIN32
+    const auto executableDir = FileSystem::executableDirectory();
+    // Portable installations do not depend on a working user profile.
+    const auto paths = FileSystem::resolveWindowsPaths(executableDir,
+        std::filesystem::exists(executableDir / L"portable.txt") ? std::filesystem::path{} : FileSystem::localAppData());
+    FileSystem::prepareDirectory(paths.storage);
+    const std::string storageDirectory = paths.storage.u8string();
+    dir = storageDirectory.c_str();
+#endif
     int		UpTime = 0;
 
     if (UpTime == 0) {
@@ -32,7 +42,11 @@ int main(int argc, char* args[]) {
     }
     
     ZipFile zipFile;
+#ifdef _WIN32
+    zipFile.openZipFile(paths.ipa.u8string().c_str());
+#else
     zipFile.openZipFile("Wolfenstein RPG.ipa");
+#endif
 
 	SDLGL sdlGL;
 	sdlGL.Initialize();
@@ -61,6 +75,12 @@ int main(int argc, char* args[]) {
 	return 0;
 }
 
+
+catch (const std::exception& error) {
+    fprintf(stderr, "%s\n", error.what());
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Wolfenstein RPG filesystem error", error.what(), nullptr);
+    return 1;
+}
 
 static uint32_t lastTimems = 0;
 
